@@ -1,0 +1,123 @@
+"use client";
+
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { StatusSelectContent } from "./account-select-items";
+
+import type { AccountFormValues } from "./types";
+
+interface AccountFormFieldsProps {
+  values: AccountFormValues;
+  accountTypes: string[];
+  accountStatuses: string[];
+  onChange: (field: keyof AccountFormValues, value: string) => void;
+  showInitialBalance?: boolean;
+}
+
+export function AccountFormFields({
+  values,
+  accountTypes,
+  accountStatuses,
+  onChange,
+  showInitialBalance = true,
+}: AccountFormFieldsProps) {
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="account-name">Nome</Label>
+        <Input
+          id="account-name"
+          value={values.name}
+          onChange={(event) => onChange("name", event.target.value)}
+          placeholder="Ex.: Nubank"
+          required
+        />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="account-type">Tipo de conta</Label>
+        <Select
+          value={values.accountType}
+          onValueChange={(value) => onChange("accountType", value)}
+        >
+          <SelectTrigger id="account-type" className="w-full">
+            <SelectValue placeholder="Selecione o tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            {accountTypes.map((type) => (
+              <SelectItem key={type} value={type}>
+                {type}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:col-span-2">
+        <Label htmlFor="account-status">Status</Label>
+        <Select
+          value={values.status}
+          onValueChange={(value) => onChange("status", value)}
+        >
+          <SelectTrigger id="account-status" className="w-full">
+            <SelectValue placeholder="Selecione o status">
+              {values.status && <StatusSelectContent label={values.status} />}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {accountStatuses.map((status) => (
+              <SelectItem key={status} value={status}>
+                <StatusSelectContent label={status} />
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {showInitialBalance ? (
+        <div className="flex flex-col gap-2 sm:col-span-2">
+          <Label htmlFor="account-initial-balance">Saldo inicial</Label>
+          <CurrencyInput
+            id="account-initial-balance"
+            value={values.initialBalance}
+            onValueChange={(value) => onChange("initialBalance", value)}
+            placeholder="R$ 0,00"
+          />
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-2 sm:col-span-2">
+        <Label htmlFor="account-note">Anotação</Label>
+        <Textarea
+          id="account-note"
+          value={values.note}
+          onChange={(event) => onChange("note", event.target.value)}
+          placeholder="Informações adicionais sobre a conta"
+        />
+      </div>
+
+      <div className="flex items-center gap-2 sm:col-span-2">
+        <Checkbox
+          id="exclude-from-balance"
+          checked={values.excludeFromBalance}
+          onCheckedChange={(checked) =>
+            onChange("excludeFromBalance", checked ? "true" : "false")
+          }
+        />
+        <Label htmlFor="exclude-from-balance" className="cursor-pointer text-sm font-normal">
+          Excluir do saldo total (útil para contas de investimento ou reserva)
+        </Label>
+      </div>
+    </div>
+  );
+}

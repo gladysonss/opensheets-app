@@ -1,0 +1,162 @@
+# Docker Compose para Next.js + PostgreSQL
+name: opensheets
+
+# MODOS DE USO:
+# 1. Banco LOCAL (PostgreSQL em container):
+#    - Configure DB_PROVIDER=local no .env
+#    - Execute: docker compose up --build
+#
+# 2. Banco REMOTO (ex: Supabase):
+#    - Configure DB_PROVIDER=remote no .env
+#    - Configure DATABASE_URL com a URL do banco remoto
+#    - Execute: docker compose up app --build (apenas o serviço app)
+#
+# 3. Para parar todos os serviços:
+#    - Execute: docker compose down
+#
+# 4. Para remover volumes (CUIDADO: apaga dados do banco local):
+#    - Execute: docker compose down -v
+
+services:
+  # ============================================
+  # Serviço: PostgreSQL (Banco de dados local)
+  # ============================================
+  db:
+    image: postgres:18-alpine
+    container_name: opensheets_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-opensheets}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-opensheets_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-opensheets_db}
+      # Configurações de performance
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+
+    ports:
+      # Mapeia porta 5432 do container para 5432 do host
+      # Útil para conectar com ferramentas externas (ex: DBeaver, pgAdmin)
+      - "${DB_PORT:-5432}:5432"
+
+    volumes:
+      # Volume nomeado para persistência de dados
+      # Os dados sobrevivem ao restart do container
+      - postgres_data:/var/lib/postgresql/data
+      # Script de inicialização (cria extensão pgcrypto automaticamente)
+      - ./scripts/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-opensheets} -d ${POSTGRES_DB:-opensheets_db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    networks:
+      - opensheets_network
+
+    # Descomentar para ativar logs de queries (debug)
+    # command: ["postgres", "-c", "log_statement=all"]
+
+  # ============================================
+  # Serviço: Aplicação Next.js
+  # ============================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: opensheets_app
+    restart: unless-stopped
+
+    ports:
+      # Mapeia porta 3000 do container para 3000 do host
+      - "${APP_PORT:-3000}:3000"
+
+    environment:
+      # Variáveis de ambiente da aplicação
+      NODE_ENV: production
+
+      # DATABASE_URL será definida dinamicamente baseada em DB_PROVIDER
+      # Se DB_PROVIDER=local, usa o serviço 'db'
+      # Se DB_PROVIDER=remote, usa a DATABASE_URL do .env
+      DATABASE_URL: ${DATABASE_URL}
+
+      # Outras variáveis de ambiente necessárias
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+
+      # Configurações de email (se usar)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+
+      # Configurações de OAuth (se usar)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+
+      # Configurações de AI providers (se usar)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
+    # Só depende do 'db' se estiver usando banco local
+    # Para banco remoto, comente a linha abaixo ou suba apenas: docker compose up app
+    depends_on:
+      db:
+        condition: service_healthy
+
+    networks:
+      - opensheets_network
+
+    # Script de inicialização: roda migrations antes de iniciar o app
+    # ATENÇÃO: Em produção, considere rodar migrations separadamente por segurança
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🚀 Aguardando banco de dados..."
+        sleep 5
+
+        echo "📦 Rodando migrations..."
+        pnpm db:push || echo "⚠️  Migrations falharam ou já estão atualizadas"
+
+        echo "✅ Iniciando aplicação Next.js..."
+        node server.js
+
+    # Healthcheck da aplicação
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000/api/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    name: opensheets_postgres_data
+    driver: local
+
+# ============================================
+# Networks
+# ============================================
+networks:
+  opensheets_network:
+    name: opensheets_network
+    driver: bridge

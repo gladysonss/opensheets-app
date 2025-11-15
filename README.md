@@ -1,0 +1,1030 @@
+# OpenSheets
+
+> Uma aplicação moderna e completa construída com **Next.js 16**, **Better Auth**, **Drizzle ORM**, **PostgreSQL** e **shadcn/ui**.
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-blue?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)](https://www.docker.com/)
+
+---
+
+## 📖 Índice
+
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Início Rápido](#-início-rápido)
+  - [Opção 1: Desenvolvimento Local (Recomendado para Devs)](#opção-1-desenvolvimento-local-recomendado-para-devs)
+  - [Opção 2: Docker Completo (Usuários Finais)](#opção-2-docker-completo-usuários-finais)
+  - [Opção 3: Docker + Banco Remoto](#opção-3-docker--banco-remoto)
+- [Scripts Disponíveis](#-scripts-disponíveis)
+- [Docker - Guia Detalhado](#-docker---guia-detalhado)
+- [Configuração de Variáveis de Ambiente](#-configuração-de-variáveis-de-ambiente)
+- [Banco de Dados](#-banco-de-dados)
+- [Arquitetura](#-arquitetura)
+- [Troubleshooting](#-troubleshooting)
+- [Contribuindo](#-contribuindo)
+
+---
+
+## 🎯 Sobre o Projeto
+
+**OpenSheets** é uma aplicação full-stack moderna projetada para controle de finanças pessoais. Construída com as melhores práticas de desenvolvimento e ferramentas de ponta, oferece uma base sólida e escalável para gestão financeira completa.
+
+### Por que usar o OpenSheets?
+
+- ✅ **Pronto para Produção** - Docker, health checks, migrations automáticas
+- ✅ **TypeScript First** - Type safety em toda a aplicação
+- ✅ **Autenticação Completa** - Better Auth com OAuth, email magic links
+- ✅ **ORM Moderno** - Drizzle com Drizzle Studio integrado
+- ✅ **UI Components** - shadcn/ui com design system completo
+- ✅ **Developer Experience** - Hot reload, Turbopack, ESLint configurado
+
+---
+
+## ✨ Features
+
+### 🔐 Autenticação
+
+- Better Auth integrado
+- OAuth (Google, GitHub)
+- Email magic links
+- Session management
+- Protected routes via middleware
+
+### 🗄️ Banco de Dados
+
+- PostgreSQL 18 (última versão estável)
+- Drizzle ORM com TypeScript
+- Migrations automáticas
+- Drizzle Studio (UI visual para DB)
+- Suporte para banco local (Docker) ou remoto (Supabase, Neon, etc)
+
+### 🎨 Interface
+
+- shadcn/ui components
+- Tailwind CSS v4
+- Dark mode suportado
+- Animações com Framer Motion
+
+### 🐳 Docker
+
+- Multi-stage build otimizado
+- Health checks para app e banco
+- Volumes persistentes
+- Network isolada
+- Scripts npm facilitados
+
+### 🧪 Desenvolvimento
+
+- Next.js 16 com App Router
+- Turbopack (fast refresh)
+- TypeScript 5.9
+- ESLint + Prettier
+- React 19
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+
+- **Framework:** Next.js 16 (App Router)
+- **Linguagem:** TypeScript 5.9
+- **UI Library:** React 19
+- **Styling:** Tailwind CSS v4
+- **Components:** shadcn/ui (Radix UI)
+- **Icons:** Lucide React, Remixicon
+- **Animations:** Framer Motion
+
+### Backend
+
+- **Runtime:** Node.js 22
+- **Database:** PostgreSQL 18
+- **ORM:** Drizzle ORM
+- **Auth:** Better Auth
+- **Email:** Resend
+
+### DevOps
+
+- **Containerization:** Docker + Docker Compose
+- **Package Manager:** pnpm
+- **Build Tool:** Turbopack
+
+### AI Integration (Opcional)
+
+- Anthropic (Claude)
+- OpenAI (GPT)
+- Google Gemini
+- OpenRouter
+
+---
+
+## 🚀 Início Rápido
+
+Escolha a opção que melhor se adequa ao seu caso:
+
+| Cenário     | Quando usar                               | Comando principal                      |
+| ----------- | ----------------------------------------- | -------------------------------------- |
+| **Opção 1** | Você vai **desenvolver** e alterar código | `docker compose up db -d` + `pnpm dev` |
+| **Opção 2** | Você só quer **usar** a aplicação         | `pnpm docker:up`                       |
+| **Opção 3** | Você já tem um **banco remoto**           | `docker compose up app --build`        |
+
+---
+
+### Opção 1: Desenvolvimento Local (Recomendado para Devs)
+
+Esta é a **melhor opção para desenvolvedores** que vão modificar o código.
+
+#### Pré-requisitos
+
+- Node.js 22+ instalado
+- pnpm instalado (ou npm/yarn)
+- Docker e Docker Compose instalados
+
+#### Passo a Passo
+
+1. **Clone o repositório**
+
+   ```bash
+   git clone https://github.com/felipegcoutinho/opensheets.git
+   cd opensheets
+   ```
+
+2. **Instale as dependências**
+
+   ```bash
+   pnpm install
+   ```
+
+3. **Configure as variáveis de ambiente**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edite o `.env` e configure:
+
+   ```env
+   # Banco de dados (usando Docker)
+   DATABASE_URL=postgresql://opensheets:opensheets_dev_password@localhost:5432/opensheets_db
+   DB_PROVIDER=local
+
+   # Better Auth (gere com: openssl rand -base64 32)
+   BETTER_AUTH_SECRET=seu-secret-aqui
+   BETTER_AUTH_URL=http://localhost:3000
+   ```
+
+4. **Suba apenas o PostgreSQL em Docker**
+
+   ```bash
+   docker compose up db -d
+   ```
+
+   Isso sobe **apenas o banco de dados** em container. A aplicação roda localmente.
+
+5. **Execute as migrations**
+
+   ```bash
+   pnpm db:push
+   ```
+
+6. **Inicie o servidor de desenvolvimento**
+
+   ```bash
+   pnpm dev
+   ```
+
+7. **Acesse a aplicação**
+   ```
+   http://localhost:3000
+   ```
+
+#### Por que esta opção?
+
+- ✅ **Hot reload perfeito** - Mudanças no código refletem instantaneamente
+- ✅ **Debugger funciona** - Use breakpoints normalmente
+- ✅ **Menos recursos** - Só o banco roda em Docker
+- ✅ **Drizzle Studio** - Acesse com `pnpm db:studio`
+- ✅ **Melhor DX** - Developer Experience otimizada
+
+---
+
+### Opção 2: Docker Completo (Usuários Finais)
+
+Ideal para quem quer apenas **usar a aplicação** sem mexer no código.
+
+#### Pré-requisitos
+
+- Docker e Docker Compose instalados
+
+#### Passo a Passo
+
+1. **Clone o repositório**
+
+   ```bash
+   git clone https://github.com/felipegcoutinho/opensheets.git
+   cd opensheets
+   ```
+
+2. **Configure as variáveis de ambiente**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edite o `.env`:
+
+   ```env
+   # Use o host "db" (nome do serviço Docker)
+   DATABASE_URL=postgresql://opensheets:opensheets_dev_password@db:5432/opensheets_db
+   DB_PROVIDER=local
+
+   # Better Auth
+   BETTER_AUTH_SECRET=seu-secret-aqui
+   BETTER_AUTH_URL=http://localhost:3000
+   ```
+
+3. **Suba tudo em Docker**
+
+   ```bash
+   pnpm docker:up
+   # ou: docker compose up --build
+   ```
+
+   Isso sobe **aplicação + banco de dados** em containers.
+
+4. **Acesse a aplicação**
+
+   ```
+   http://localhost:3000
+   ```
+
+5. **Para parar**
+   ```bash
+   pnpm docker:down
+   # ou: docker compose down
+   ```
+
+#### Dicas
+
+- Use `pnpm docker:up:detached` para rodar em background
+- Veja logs com `pnpm docker:logs`
+- Reinicie com `pnpm docker:restart`
+
+---
+
+### Opção 3: Docker + Banco Remoto
+
+Se você já tem PostgreSQL no **Supabase**, **Neon**, **Railway**, etc.
+
+#### Passo a Passo
+
+1. **Configure o `.env` com banco remoto**
+
+   ```env
+   DATABASE_URL=postgresql://user:password@host.region.provider.com:5432/database?sslmode=require
+   DB_PROVIDER=remote
+
+   BETTER_AUTH_SECRET=seu-secret-aqui
+   BETTER_AUTH_URL=http://localhost:3000
+   ```
+
+2. **Suba apenas a aplicação**
+
+   ```bash
+   docker compose up app --build
+   ```
+
+3. **Acesse a aplicação**
+   ```
+   http://localhost:3000
+   ```
+
+---
+
+## 📜 Scripts Disponíveis
+
+### Desenvolvimento
+
+```bash
+# Servidor de desenvolvimento (com Turbopack)
+pnpm dev
+
+# Build de produção
+pnpm build
+
+# Servidor de produção
+pnpm start
+
+# Linter
+pnpm lint
+```
+
+### Banco de Dados (Drizzle)
+
+```bash
+# Gerar migrations a partir do schema
+pnpm db:generate
+
+# Executar migrations
+pnpm db:migrate
+
+# Push schema direto para o banco (dev only)
+pnpm db:push
+
+# Abrir Drizzle Studio (UI visual do banco)
+pnpm db:studio
+```
+
+### Docker
+
+```bash
+# Subir todos os containers (app + banco)
+pnpm docker:up
+
+# Subir em background (detached mode)
+pnpm docker:up:detached
+
+# Parar todos os containers
+pnpm docker:down
+
+# Parar e REMOVER volumes (⚠️ apaga dados do banco!)
+pnpm docker:down:volumes
+
+# Ver logs em tempo real
+pnpm docker:logs
+
+# Logs apenas da aplicação
+pnpm docker:logs:app
+
+# Logs apenas do banco de dados
+pnpm docker:logs:db
+
+# Reiniciar containers
+pnpm docker:restart
+
+# Rebuild completo (força reconstrução)
+pnpm docker:rebuild
+```
+
+### Utilitários
+
+```bash
+# Setup automático de variáveis de ambiente
+pnpm env:setup
+```
+
+---
+
+## 🐳 Docker - Guia Detalhado
+
+### Arquitetura Docker
+
+```
+┌─────────────────────────────────────────────────┐
+│              docker-compose.yml                 │
+├─────────────────────────────────────────────────┤
+│                                                 │
+│  ┌──────────────────┐      ┌─────────────────┐ │
+│  │   app            │      │      db         │ │
+│  │   (Next.js 16)   │◄─────┤  (PostgreSQL 18)│ │
+│  │   Port: 3000     │      │  Port: 5432     │ │
+│  │   Node.js 22     │      │  Alpine Linux   │ │
+│  └──────────────────┘      └─────────────────┘ │
+│                                                 │
+│  Network: opensheets_network (bridge)                │
+│  Volume: opensheets_postgres_data (persistent)       │
+│                                                 │
+└─────────────────────────────────────────────────┘
+```
+
+### Multi-Stage Build
+
+O `Dockerfile` usa **3 stages** para otimização:
+
+1. **deps** - Instala dependências
+2. **builder** - Builda a aplicação (Next.js standalone)
+3. **runner** - Imagem final mínima (apenas produção)
+
+**Benefícios:**
+
+- Imagem final **muito menor** (~200MB vs ~1GB)
+- Build cache eficiente
+- Apenas dependências de produção no final
+- Security: roda como usuário não-root
+
+### Health Checks
+
+Ambos os serviços têm health checks:
+
+**PostgreSQL:**
+
+- Comando: `pg_isready`
+- Intervalo: 10s
+- Timeout: 5s
+
+**Next.js App:**
+
+- Endpoint: `http://localhost:3000/api/health`
+- Intervalo: 30s
+- Start period: 40s (aguarda build)
+
+### Volumes e Persistência
+
+```yaml
+volumes:
+  postgres_data:
+    name: opensheets_postgres_data
+    driver: local
+```
+
+- Os dados do PostgreSQL **persistem** entre restarts
+- Para **apagar dados**: `pnpm docker:down:volumes`
+- Para **backup**: `docker compose exec db pg_dump...`
+
+### Network Isolada
+
+```yaml
+networks:
+  opensheets_network:
+    name: opensheets_network
+    driver: bridge
+```
+
+- App e banco se comunicam via network interna
+- Isolamento de segurança
+- DNS automático (app acessa `db:5432`)
+
+### Comandos Docker Avançados
+
+```bash
+# Entrar no container da aplicação
+docker compose exec app sh
+
+# Entrar no container do banco
+docker compose exec db psql -U opensheets -d opensheets_db
+
+# Ver status dos containers
+docker compose ps
+
+# Ver uso de recursos
+docker stats opensheets_app opensheets_postgres
+
+# Backup do banco
+docker compose exec db pg_dump -U opensheets opensheets_db > backup.sql
+
+# Restaurar backup
+docker compose exec -T db psql -U opensheets -d opensheets_db < backup.sql
+
+# Limpar tudo (containers, volumes, images)
+docker compose down -v
+docker system prune -a
+```
+
+### Customizando Portas
+
+No arquivo `.env`:
+
+```env
+# Porta da aplicação (padrão: 3000)
+APP_PORT=3001
+
+# Porta do banco de dados (padrão: 5432)
+DB_PORT=5433
+```
+
+---
+
+## 🔐 Configuração de Variáveis de Ambiente
+
+Copie o `.env.example` para `.env` e configure:
+
+### Variáveis Obrigatórias
+
+```env
+# === Database ===
+DATABASE_URL=postgresql://opensheets:opensheets_dev_password@localhost:5432/opensheets_db
+DB_PROVIDER=local  # ou "remote"
+
+# === Better Auth ===
+# Gere com: openssl rand -base64 32
+BETTER_AUTH_SECRET=seu-secret-super-secreto-aqui
+BETTER_AUTH_URL=http://localhost:3000
+```
+
+### Variáveis Opcionais
+
+#### PostgreSQL (customização)
+
+```env
+POSTGRES_USER=opensheets
+POSTGRES_PASSWORD=opensheets_dev_password
+POSTGRES_DB=opensheets_db
+```
+
+#### Portas (customização)
+
+```env
+APP_PORT=3000
+DB_PORT=5432
+```
+
+#### OAuth Providers
+
+```env
+GOOGLE_CLIENT_ID=seu-google-client-id
+GOOGLE_CLIENT_SECRET=seu-google-client-secret
+
+GITHUB_CLIENT_ID=seu-github-client-id
+GITHUB_CLIENT_SECRET=seu-github-client-secret
+```
+
+#### Email (Resend)
+
+```env
+RESEND_API_KEY=re_seu_api_key
+EMAIL_FROM=noreply@seudominio.com
+```
+
+#### AI Providers
+
+```env
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GOOGLE_GENERATIVE_AI_API_KEY=...
+OPENROUTER_API_KEY=sk-or-...
+```
+
+### Gerando Secrets
+
+```bash
+# BETTER_AUTH_SECRET
+openssl rand -base64 32
+
+# Ou use o script automático
+pnpm env:setup
+```
+
+---
+
+## 🗄️ Banco de Dados
+
+### Escolhendo entre Local e Remoto
+
+| Modo       | Quando usar                           | Como configurar                        |
+| ---------- | ------------------------------------- | -------------------------------------- |
+| **Local**  | Desenvolvimento, testes, prototipagem | `DB_PROVIDER=local` + Docker           |
+| **Remoto** | Produção, deploy, banco gerenciado    | `DB_PROVIDER=remote` + URL do provider |
+
+### Drizzle ORM
+
+#### Schema Definition
+
+Os schemas ficam em `/db/schema.ts`:
+
+```typescript
+import { pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  name: text("name"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+```
+
+#### Gerando Migrations
+
+```bash
+# Após alterar /db/schema.ts
+pnpm db:generate
+
+# Aplica migrations
+pnpm db:migrate
+
+# Ou push direto (dev only)
+pnpm db:push
+```
+
+#### Drizzle Studio
+
+Interface visual para explorar e editar dados:
+
+```bash
+pnpm db:studio
+```
+
+Abre em: `https://local.drizzle.studio`
+
+### Migrations Automáticas (Docker)
+
+No `docker-compose.yml`, migrations rodam automaticamente:
+
+```yaml
+command:
+  - |
+    echo "📦 Rodando migrations..."
+    pnpm db:push
+
+    echo "✅ Iniciando aplicação..."
+    node server.js
+```
+
+### Backup e Restore
+
+```bash
+# Backup (banco local Docker)
+docker compose exec db pg_dump -U opensheets opensheets_db > backup_$(date +%Y%m%d).sql
+
+# Backup (banco remoto)
+pg_dump $DATABASE_URL > backup.sql
+
+# Restore (Docker)
+docker compose exec -T db psql -U opensheets -d opensheets_db < backup.sql
+
+# Restore (remoto)
+psql $DATABASE_URL < backup.sql
+```
+
+---
+
+## 🏗️ Arquitetura
+
+### Estrutura de Pastas
+
+```
+opensheets/
+├── app/                      # Next.js App Router
+│   ├── api/                  # API Routes
+│   │   ├── auth/            # Better Auth endpoints
+│   │   └── health/          # Health check
+│   ├── (dashboard)/         # Protected routes (com auth)
+│   └── layout.tsx           # Root layout
+│
+├── components/              # React Components
+│   ├── ui/                  # shadcn/ui components
+│   └── ...                  # Feature components
+│
+├── lib/                     # Shared utilities
+│   ├── db.ts               # Drizzle client
+│   ├── auth.ts             # Better Auth server
+│   └── auth-client.ts      # Better Auth client
+│
+├── db/                      # Drizzle schema
+│   └── schema.ts           # Database schema
+│
+├── drizzle/                 # Generated migrations
+│   └── migrations/
+│
+├── hooks/                   # Custom React hooks
+├── public/                  # Static assets
+├── scripts/                 # Utility scripts
+│   ├── setup-env.sh        # Env setup automation
+│   └── postgres/init.sql   # PostgreSQL init script
+│
+├── docker/                  # Docker configs
+│   └── postgres/init.sql
+│
+├── Dockerfile              # Production build
+├── docker-compose.yml      # Docker orchestration
+├── next.config.ts          # Next.js config
+├── drizzle.config.ts       # Drizzle ORM config
+├── tailwind.config.ts      # Tailwind config
+└── tsconfig.json           # TypeScript config
+```
+
+### Fluxo de Autenticação
+
+```
+1. Usuário acessa rota protegida
+   ↓
+2. middleware.ts verifica sessão (Better Auth)
+   ↓
+3. Se não autenticado → redirect /auth
+   ↓
+4. Usuário faz login (OAuth ou email)
+   ↓
+5. Better Auth valida e cria sessão
+   ↓
+6. Cookie de sessão é salvo
+   ↓
+7. Usuário acessa rota protegida ✅
+```
+
+### Fluxo de Build (Docker)
+
+```
+1. Stage deps: Instala dependências
+   ↓
+2. Stage builder: Builda Next.js (standalone)
+   ↓
+3. Stage runner: Copia apenas build + deps prod
+   ↓
+4. Container final: ~200MB (otimizado)
+```
+
+---
+
+## 🆘 Troubleshooting
+
+### Erro: "DATABASE_URL env variable is not set"
+
+**Causa:** Arquivo `.env` não existe ou `DATABASE_URL` não configurado
+
+**Solução:**
+
+```bash
+cp .env.example .env
+# Edite .env e configure DATABASE_URL
+```
+
+---
+
+### Container do app não conecta ao banco
+
+**Causa:** `DATABASE_URL` usa `localhost` em vez de `db`
+
+**Solução:**
+
+Para Docker, use o **nome do serviço**:
+
+```env
+# ❌ Errado (localhost não funciona dentro do container)
+DATABASE_URL=postgresql://opensheets:senha@localhost:5432/opensheets_db
+
+# ✅ Correto (usa nome do serviço Docker)
+DATABASE_URL=postgresql://opensheets:senha@db:5432/opensheets_db
+```
+
+Para desenvolvimento local (sem Docker app):
+
+```env
+# ✅ Correto (app roda local, banco em Docker)
+DATABASE_URL=postgresql://opensheets:senha@localhost:5432/opensheets_db
+```
+
+**Verifique o status do banco:**
+
+```bash
+docker compose ps
+docker compose logs db
+```
+
+---
+
+### Porta 3000 ou 5432 já está em uso
+
+**Solução:**
+
+Edite o `.env`:
+
+```env
+APP_PORT=3001
+DB_PORT=5433
+```
+
+Ou pare o processo que está usando:
+
+```bash
+# Descobrir quem usa a porta
+lsof -i :3000
+lsof -i :5432
+
+# Matar processo
+kill -9 <PID>
+```
+
+---
+
+### Migrations não rodam
+
+**Com Docker:**
+
+Migrations rodam automaticamente no startup. Veja logs:
+
+```bash
+pnpm docker:logs:app
+```
+
+Se falharem, rode manualmente:
+
+```bash
+docker compose exec app pnpm db:push
+```
+
+**Sem Docker:**
+
+```bash
+pnpm db:push
+```
+
+---
+
+### Erro: "server.js not found"
+
+**Causa:** Next.js não gerou standalone build
+
+**Solução:**
+
+1. Verifique `next.config.ts`:
+
+```typescript
+const nextConfig: NextConfig = {
+  output: "standalone", // ← Deve estar presente
+};
+```
+
+2. Rebuild:
+
+```bash
+docker compose down
+docker compose up --build
+```
+
+---
+
+### Erro ao atualizar PostgreSQL 16 → 18
+
+**Causa:** Volumes antigos são incompatíveis
+
+**Solução:**
+
+```bash
+# ⚠️ ATENÇÃO: Isso apaga dados do banco local!
+docker compose down -v
+
+# Suba novamente com PostgreSQL 18
+docker compose up --build
+```
+
+**Para preservar dados:**
+
+```bash
+# 1. Backup
+docker compose exec db pg_dumpall -U opensheets > backup.sql
+
+# 2. Limpa volumes
+docker compose down -v
+
+# 3. Sobe PG 18
+docker compose up -d db
+
+# 4. Aguarda (15s)
+sleep 15
+
+# 5. Restaura
+docker compose exec -T db psql -U opensheets -d opensheets_db < backup.sql
+```
+
+---
+
+### Drizzle Studio não abre
+
+**Solução:**
+
+1. Verifique se o banco está rodando:
+
+```bash
+docker compose ps
+```
+
+2. Teste conexão:
+
+```bash
+psql $DATABASE_URL
+```
+
+3. Abra Drizzle Studio:
+
+```bash
+pnpm db:studio
+```
+
+---
+
+### Build do Docker muito lento
+
+**Causa:** Cache não está sendo aproveitado
+
+**Solução:**
+
+1. Use BuildKit:
+
+```bash
+export DOCKER_BUILDKIT=1
+docker compose build
+```
+
+2. Limpe cache antigo:
+
+```bash
+docker builder prune
+```
+
+3. Multi-stage build já otimiza camadas
+
+---
+
+### "Permission denied" ao rodar Docker
+
+**Causa:** Usuário não está no grupo docker
+
+**Solução (Linux):**
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+**Solução (Mac/Windows):**
+
+- Docker Desktop deve estar rodando
+- Verifique configurações de permissão
+
+---
+
+### Limpar tudo e começar do zero
+
+```bash
+# Para containers e remove volumes
+docker compose down -v
+
+# Remove images não usadas
+docker system prune -a
+
+# Remove TUDO do Docker (cuidado!)
+docker system prune -a --volumes
+
+# Rebuild do zero
+pnpm docker:up
+```
+
+---
+
+## 🤝 Contribuindo
+
+Contribuições são muito bem-vindas!
+
+### Como contribuir
+
+1. **Fork** o projeto
+2. **Clone** seu fork
+   ```bash
+   git clone https://github.com/seu-usuario/opensheets.git
+   ```
+3. **Crie uma branch** para sua feature
+   ```bash
+   git checkout -b feature/minha-feature
+   ```
+4. **Commit** suas mudanças
+   ```bash
+   git commit -m 'feat: adiciona minha feature'
+   ```
+5. **Push** para a branch
+   ```bash
+   git push origin feature/minha-feature
+   ```
+6. Abra um **Pull Request**
+
+### Padrões
+
+- Use **TypeScript**
+- Siga o **ESLint** configurado
+- Documente **features novas**
+- Use **commits semânticos** (feat, fix, docs, etc)
+
+---
+
+## 📄 Licença
+
+Este projeto é open source e está disponível sob a [Licença MIT](LICENSE).
+
+---
+
+## 🙏 Agradecimentos
+
+- [Next.js](https://nextjs.org/)
+- [Better Auth](https://better-auth.com/)
+- [Drizzle ORM](https://orm.drizzle.team/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Vercel](https://vercel.com/)
+
+---
+
+## 📞 Contato
+
+**Desenvolvido por:** Felipe Coutinho
+**GitHub:** [@felipegcoutinho](https://github.com/felipegcoutinho)
+**Repositório:** [opensheets](https://github.com/felipegcoutinho/opensheets)
+
+---
+
+<div align="center">
+
+**⭐ Se este projeto foi útil, considere dar uma estrela!**
+
+Desenvolvido com ❤️ para a comunidade open source
+
+</div>

@@ -1,0 +1,344 @@
+"use client";
+
+import {
+  createBudgetAction,
+  updateBudgetAction,
+} from "@/app/(dashboard)/orcamentos/actions";
+import { CategoryIcon } from "@/components/categorias/category-icon";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { useControlledState } from "@/hooks/use-controlled-state";
+import { useFormState } from "@/hooks/use-form-state";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
+import { toast } from "sonner";
+
+import type { Budget, BudgetCategory, BudgetFormValues } from "./types";
+
+interface BudgetDialogProps {
+  mode: "create" | "update";
+  trigger?: React.ReactNode;
+  budget?: Budget;
+  categories: BudgetCategory[];
+  defaultPeriod: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+type SelectOption = {
+  value: string;
+  label: string;
+};
+
+const monthFormatter = new Intl.DateTimeFormat("pt-BR", {
+  month: "long",
+  year: "numeric",
+});
+
+const formatPeriodLabel = (period: string) => {
+  const [year, month] = period.split("-").map(Number);
+  if (!year || !month) {
+    return period;
+  }
+  const date = new Date(year, month - 1, 1);
+  if (Number.isNaN(date.getTime())) {
+    return period;
+  }
+  const label = monthFormatter.format(date);
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
+
+const buildPeriodOptions = (currentValue?: string): SelectOption[] => {
+  const now = new Date();
+  const options: SelectOption[] = [];
+
+  for (let offset = -3; offset <= 3; offset += 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}`;
+    options.push({ value, label: formatPeriodLabel(value) });
+  }
+
+  if (
+    currentValue &&
+    !options.some((option) => option.value === currentValue)
+  ) {
+    options.push({
+      value: currentValue,
+      label: formatPeriodLabel(currentValue),
+    });
+  }
+
+  return options
+    .sort((a, b) => a.value.localeCompare(b.value))
+    .map((option) => ({
+      value: option.value,
+      label: option.label,
+    }));
+};
+
+const buildInitialValues = ({
+  budget,
+  defaultPeriod,
+}: {
+  budget?: Budget;
+  defaultPeriod: string;
+}): BudgetFormValues => ({
+  categoriaId: budget?.category?.id ?? "",
+  period: budget?.period ?? defaultPeriod,
+  amount: budget ? (Math.round(budget.amount * 100) / 100).toFixed(2) : "",
+});
+
+export function BudgetDialog({
+  mode,
+  trigger,
+  budget,
+  categories,
+  defaultPeriod,
+  open,
+  onOpenChange,
+}: BudgetDialogProps) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+
+  // Use controlled state hook for dialog open state
+  const [dialogOpen, setDialogOpen] = useControlledState(
+    open,
+    false,
+    onOpenChange
+  );
+
+  const initialState = useMemo(
+    () =>
+      buildInitialValues({
+        budget,
+        defaultPeriod,
+      }),
+    [budget, defaultPeriod]
+  );
+
+  // Use form state hook for form management
+  const { formState, updateField, setFormState } =
+    useFormState<BudgetFormValues>(initialState);
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (dialogOpen) {
+      setFormState(initialState);
+      setErrorMessage(null);
+    }
+  }, [dialogOpen, initialState, setFormState]);
+
+  // Clear error when dialog closes
+  useEffect(() => {
+    if (!dialogOpen) {
+      setErrorMessage(null);
+    }
+  }, [dialogOpen]);
+
+  const periodOptions = useMemo(
+    () => buildPeriodOptions(formState.period),
+    [formState.period]
+  );
+
+  const handleSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setErrorMessage(null);
+
+      if (mode === "update" && !budget?.id) {
+        const message = "Orçamento inválido.";
+        setErrorMessage(message);
+        toast.error(message);
+        return;
+      }
+
+      if (formState.categoriaId.length === 0) {
+        const message = "Selecione uma categoria.";
+        setErrorMessage(message);
+        toast.error(message);
+        return;
+      }
+
+      if (formState.period.length === 0) {
+        const message = "Informe o período.";
+        setErrorMessage(message);
+        toast.error(message);
+        return;
+      }
+
+      if (formState.amount.length === 0) {
+        const message = "Informe o valor limite.";
+        setErrorMessage(message);
+        toast.error(message);
+        return;
+      }
+
+      const payload = {
+        categoriaId: formState.categoriaId,
+        period: formState.period,
+        amount: formState.amount,
+      };
+
+      startTransition(async () => {
+        const result =
+          mode === "create"
+            ? await createBudgetAction(payload)
+            : await updateBudgetAction({
+                id: budget?.id ?? "",
+                ...payload,
+              });
+
+        if (result.success) {
+          toast.success(result.message);
+          setDialogOpen(false);
+          setFormState(initialState);
+          return;
+        }
+
+        setErrorMessage(result.error);
+        toast.error(result.error);
+      });
+    },
+    [budget?.id, formState, initialState, mode, setDialogOpen, setFormState]
+  );
+
+  const title = mode === "create" ? "Novo orçamento" : "Editar orçamento";
+  const description =
+    mode === "create"
+      ? "Defina um limite de gastos para acompanhar suas despesas."
+      : "Atualize os detalhes do orçamento selecionado.";
+  const submitLabel =
+    mode === "create" ? "Salvar orçamento" : "Atualizar orçamento";
+  const disabled = categories.length === 0;
+
+  return (
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+
+        {disabled ? (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
+              Cadastre pelo menos uma categoria de despesa para criar um
+              orçamento.
+            </div>
+            <DialogFooter className="gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+              >
+                Fechar
+              </Button>
+            </DialogFooter>
+          </div>
+        ) : (
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-2">
+              <Label htmlFor="budget-category">Categoria</Label>
+              <Select
+                value={formState.categoriaId}
+                onValueChange={(value) => updateField("categoriaId", value)}
+              >
+                <SelectTrigger id="budget-category" className="w-full">
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <CategoryIcon
+                        name={category.icon ?? undefined}
+                        className="size-4"
+                      />
+                      <span>{category.name}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="budget-period">Período</Label>
+                <Select
+                  value={formState.period}
+                  onValueChange={(value) => updateField("period", value)}
+                >
+                  <SelectTrigger id="budget-period" className="w-full">
+                    <SelectValue placeholder="Selecione o período" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-64">
+                    {periodOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="budget-amount">Valor limite</Label>
+                <CurrencyInput
+                  id="budget-amount"
+                  placeholder="R$ 0,00"
+                  value={formState.amount}
+                  onValueChange={(value) => updateField("amount", value)}
+                />
+              </div>
+            </div>
+
+            {errorMessage ? (
+              <p className="text-sm font-medium text-destructive">
+                {errorMessage}
+              </p>
+            ) : null}
+
+            <DialogFooter className="gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setDialogOpen(false)}
+                disabled={isPending}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Salvando..." : submitLabel}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,155 @@
+import { lancamentos, pagadores } from "@/db/schema";
+import { ACCOUNT_AUTO_INVOICE_NOTE_PREFIX } from "@/lib/accounts/constants";
+import { db } from "@/lib/db";
+import { PAGADOR_ROLE_ADMIN } from "@/lib/pagadores/constants";
+import {
+  getPreviousPeriod,
+  buildPeriodRange,
+  comparePeriods,
+} from "@/lib/utils/period";
+import { safeToNumber } from "@/lib/utils/number";
+import { and, asc, eq, ilike, isNull, lte, not, or, sum, ne } from "drizzle-orm";
+
+const RECEITA = "Receita";
+const DESPESA = "Despesa";
+const TRANSFERENCIA = "Transferência";
+
+type MetricPair = {
+  current: number;
+  previous: number;
+};
+
+export type DashboardCardMetrics = {
+  period: string;
+  previousPeriod: string;
+  receitas: MetricPair;
+  despesas: MetricPair;
+  balanco: MetricPair;
+  previsto: MetricPair;
+};
+
+type PeriodTotals = {
+  receitas: number;
+  despesas: number;
+  balanco: number;
+};
+
+const createEmptyTotals = (): PeriodTotals => ({
+  receitas: 0,
+  despesas: 0,
+  balanco: 0,
+});
+
+const ensurePeriodTotals = (
+  store: Map<string, PeriodTotals>,
+  period: string
+): PeriodTotals => {
+  if (!store.has(period)) {
+    store.set(period, createEmptyTotals());
+  }
+  const totals = store.get(period);
+  // This should always exist since we just set it above
+  if (!totals) {
+    const emptyTotals = createEmptyTotals();
+    store.set(period, emptyTotals);
+    return emptyTotals;
+  }
+  return totals;
+};
+
+// Re-export for backward compatibility
+export { getPreviousPeriod };
+
+export async function fetchDashboardCardMetrics(
+  userId: string,
+  period: string
+): Promise<DashboardCardMetrics> {
+  const previousPeriod = getPreviousPeriod(period);
+
+  const rows = await db
+    .select({
+      period: lancamentos.period,
+      transactionType: lancamentos.transactionType,
+      totalAmount: sum(lancamentos.amount).as("total"),
+    })
+    .from(lancamentos)
+    .innerJoin(pagadores, eq(lancamentos.pagadorId, pagadores.id))
+    .where(
+      and(
+        eq(lancamentos.userId, userId),
+        lte(lancamentos.period, period),
+        eq(pagadores.role, PAGADOR_ROLE_ADMIN),
+        ne(lancamentos.transactionType, TRANSFERENCIA),
+        or(
+          isNull(lancamentos.note),
+          not(
+            ilike(
+              lancamentos.note,
+              `${ACCOUNT_AUTO_INVOICE_NOTE_PREFIX}%`
+            )
+          )
+        )
+      )
+    )
+    .groupBy(lancamentos.period, lancamentos.transactionType)
+    .orderBy(asc(lancamentos.period), asc(lancamentos.transactionType));
+
+  const periodTotals = new Map<string, PeriodTotals>();
+
+  for (const row of rows) {
+    if (!row.period) continue;
+    const totals = ensurePeriodTotals(periodTotals, row.period);
+    const total = safeToNumber(row.totalAmount);
+    if (row.transactionType === RECEITA) {
+      totals.receitas += total;
+    } else if (row.transactionType === DESPESA) {
+      totals.despesas += Math.abs(total);
+    }
+  }
+
+  ensurePeriodTotals(periodTotals, period);
+  ensurePeriodTotals(periodTotals, previousPeriod);
+
+  const earliestPeriod =
+    periodTotals.size > 0 ? Array.from(periodTotals.keys()).sort()[0] : period;
+
+  const startPeriod =
+    comparePeriods(earliestPeriod, previousPeriod) <= 0
+      ? earliestPeriod
+      : previousPeriod;
+
+  const periodRange = buildPeriodRange(startPeriod, period);
+  const forecastByPeriod = new Map<string, number>();
+  let runningForecast = 0;
+
+  for (const key of periodRange) {
+    const totals = ensurePeriodTotals(periodTotals, key);
+    totals.balanco = totals.receitas - totals.despesas;
+    runningForecast += totals.balanco;
+    forecastByPeriod.set(key, runningForecast);
+  }
+
+  const currentTotals = ensurePeriodTotals(periodTotals, period);
+  const previousTotals = ensurePeriodTotals(periodTotals, previousPeriod);
+
+  return {
+    period,
+    previousPeriod,
+    receitas: {
+      current: currentTotals.receitas,
+      previous: previousTotals.receitas,
+    },
+    despesas: {
+      current: currentTotals.despesas,
+      previous: previousTotals.despesas,
+    },
+    balanco: {
+      current: currentTotals.balanco,
+      previous: previousTotals.balanco,
+    },
+    previsto: {
+      current: forecastByPeriod.get(period) ?? runningForecast,
+      previous: forecastByPeriod.get(previousPeriod) ?? 0,
+    },
+  };
+}

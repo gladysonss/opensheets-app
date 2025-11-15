@@ -1,0 +1,384 @@
+import { PagadorCardUsageCard } from "@/components/pagadores/details/pagador-card-usage-card";
+import { PagadorHistoryCard } from "@/components/pagadores/details/pagador-history-card";
+import { PagadorInfoCard } from "@/components/pagadores/details/pagador-info-card";
+import { PagadorMonthlySummaryCard } from "@/components/pagadores/details/pagador-monthly-summary-card";
+import { PagadorBoletoCard } from "@/components/pagadores/details/pagador-payment-method-cards";
+import { PagadorSharingCard } from "@/components/pagadores/details/pagador-sharing-card";
+import { LancamentosPage as LancamentosSection } from "@/components/lancamentos/page/lancamentos-page";
+import type {
+  ContaCartaoFilterOption,
+  LancamentoFilterOption,
+  LancamentoItem,
+  SelectOption,
+} from "@/components/lancamentos/types";
+import MonthPicker from "@/components/month-picker/month-picker";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { pagadores } from "@/db/schema";
+import { getUserId } from "@/lib/auth/server";
+import {
+  buildLancamentoWhere,
+  buildOptionSets,
+  buildSluggedFilters,
+  buildSlugMaps,
+  extractLancamentoSearchFilters,
+  fetchLancamentoFilterSources,
+  getSingleParam,
+  mapLancamentosData,
+  type LancamentoSearchFilters,
+  type ResolvedSearchParams,
+  type SlugMaps,
+  type SluggedFilters,
+} from "@/lib/lancamentos/page-helpers";
+import { parsePeriodParam } from "@/lib/utils/period";
+import { getPagadorAccess } from "@/lib/pagadores/access";
+import {
+  fetchPagadorBoletoStats,
+  fetchPagadorCardUsage,
+  fetchPagadorHistory,
+  fetchPagadorMonthlyBreakdown,
+} from "@/lib/pagadores/details";
+import { notFound } from "next/navigation";
+import { fetchPagadorLancamentos, fetchPagadorShares } from "./data";
+
+type PageSearchParams = Promise<ResolvedSearchParams>;
+
+type PageProps = {
+  params: Promise<{ pagadorId: string }>;
+  searchParams?: PageSearchParams;
+};
+
+const capitalize = (value: string) =>
+  value.length ? value.charAt(0).toUpperCase().concat(value.slice(1)) : value;
+
+const EMPTY_FILTERS: LancamentoSearchFilters = {
+  transactionFilter: null,
+  conditionFilter: null,
+  paymentFilter: null,
+  pagadorFilter: null,
+  categoriaFilter: null,
+  contaCartaoFilter: null,
+  searchFilter: null,
+};
+
+const createEmptySlugMaps = (): SlugMaps => ({
+  pagador: new Map(),
+  categoria: new Map(),
+  conta: new Map(),
+  cartao: new Map(),
+});
+
+type OptionSet = ReturnType<typeof buildOptionSets>;
+
+export default async function Page({ params, searchParams }: PageProps) {
+  const { pagadorId } = await params;
+  const userId = await getUserId();
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+
+  const access = await getPagadorAccess(userId, pagadorId);
+
+  if (!access) {
+    notFound();
+  }
+
+  const { pagador, canEdit } = access;
+  const dataOwnerId = pagador.userId;
+
+  const periodoParamRaw = getSingleParam(resolvedSearchParams, "periodo");
+  const {
+    period: selectedPeriod,
+    monthName,
+    year,
+  } = parsePeriodParam(periodoParamRaw);
+  const periodLabel = `${capitalize(monthName)} de ${year}`;
+
+  const searchFilters = canEdit
+    ? extractLancamentoSearchFilters(resolvedSearchParams)
+    : EMPTY_FILTERS;
+
+  let filterSources: Awaited<
+    ReturnType<typeof fetchLancamentoFilterSources>
+  > | null = null;
+  let sluggedFilters: SluggedFilters;
+  let slugMaps: SlugMaps;
+
+  if (canEdit) {
+    filterSources = await fetchLancamentoFilterSources(dataOwnerId);
+    sluggedFilters = buildSluggedFilters(filterSources);
+    slugMaps = buildSlugMaps(sluggedFilters);
+  } else {
+    sluggedFilters = {
+      pagadorFiltersRaw: [],
+      categoriaFiltersRaw: [],
+      contaFiltersRaw: [],
+      cartaoFiltersRaw: [],
+    };
+    slugMaps = createEmptySlugMaps();
+  }
+
+  const filters = buildLancamentoWhere({
+    userId: dataOwnerId,
+    period: selectedPeriod,
+    filters: searchFilters,
+    slugMaps,
+    pagadorId: pagador.id,
+  });
+
+  const sharesPromise = canEdit
+    ? fetchPagadorShares(pagador.id)
+    : Promise.resolve([]);
+
+  const [
+    lancamentoRows,
+    monthlyBreakdown,
+    historyData,
+    cardUsage,
+    boletoStats,
+    shareRows,
+  ] = await Promise.all([
+    fetchPagadorLancamentos(filters),
+    fetchPagadorMonthlyBreakdown({
+      userId: dataOwnerId,
+      pagadorId: pagador.id,
+      period: selectedPeriod,
+    }),
+    fetchPagadorHistory({
+      userId: dataOwnerId,
+      pagadorId: pagador.id,
+      period: selectedPeriod,
+    }),
+    fetchPagadorCardUsage({
+      userId: dataOwnerId,
+      pagadorId: pagador.id,
+      period: selectedPeriod,
+    }),
+    fetchPagadorBoletoStats({
+      userId: dataOwnerId,
+      pagadorId: pagador.id,
+      period: selectedPeriod,
+    }),
+    sharesPromise,
+  ]);
+
+  const mappedLancamentos = mapLancamentosData(lancamentoRows);
+  const lancamentosData = canEdit
+    ? mappedLancamentos
+    : mappedLancamentos.map((item) => ({ ...item, readonly: true }));
+
+  const pagadorSharesData = shareRows;
+
+  let optionSets: OptionSet;
+  let effectiveSluggedFilters = sluggedFilters;
+
+  if (canEdit && filterSources) {
+    optionSets = buildOptionSets({
+      ...sluggedFilters,
+      pagadorRows: filterSources.pagadorRows,
+    });
+  } else {
+    effectiveSluggedFilters = {
+      pagadorFiltersRaw: [
+        { id: pagador.id, label: pagador.name, slug: pagador.id, role: pagador.role },
+      ],
+      categoriaFiltersRaw: [],
+      contaFiltersRaw: [],
+      cartaoFiltersRaw: [],
+    };
+    optionSets = buildReadOnlyOptionSets(lancamentosData, pagador);
+  }
+
+  const pagadorSlug =
+    effectiveSluggedFilters.pagadorFiltersRaw.find(
+      (item) => item.id === pagador.id
+    )?.slug ?? null;
+
+  const pagadorFilterOptions = pagadorSlug
+    ? optionSets.pagadorFilterOptions.filter(
+        (option) => option.slug === pagadorSlug
+      )
+    : optionSets.pagadorFilterOptions;
+
+  const pagadorData = {
+    id: pagador.id,
+    name: pagador.name,
+    email: pagador.email ?? null,
+    avatarUrl: pagador.avatarUrl ?? null,
+    status: pagador.status,
+    note: pagador.note ?? null,
+    role: pagador.role ?? null,
+    isAutoSend: pagador.isAutoSend ?? false,
+    createdAt: pagador.createdAt
+      ? pagador.createdAt.toISOString()
+      : new Date().toISOString(),
+    lastMailAt: pagador.lastMailAt ? pagador.lastMailAt.toISOString() : null,
+    shareCode: canEdit ? pagador.shareCode : null,
+    canEdit,
+  };
+
+  const summaryPreview = {
+    periodLabel,
+    totalExpenses: monthlyBreakdown.totalExpenses,
+    paymentSplits: monthlyBreakdown.paymentSplits,
+    cardUsage: cardUsage.slice(0, 3).map((item) => ({
+      name: item.name,
+      amount: item.amount,
+    })),
+    boletoStats: {
+      totalAmount: boletoStats.totalAmount,
+      paidAmount: boletoStats.paidAmount,
+      pendingAmount: boletoStats.pendingAmount,
+      paidCount: boletoStats.paidCount,
+      pendingCount: boletoStats.pendingCount,
+    },
+    lancamentoCount: lancamentosData.length,
+  };
+
+  return (
+    <main className="flex flex-col gap-6">
+      <MonthPicker />
+
+      <Tabs defaultValue="profile" className="w-full">
+        <TabsList className="mb-2">
+          <TabsTrigger value="profile">Perfil</TabsTrigger>
+          <TabsTrigger value="painel">Painel</TabsTrigger>
+          <TabsTrigger value="lancamentos">Lançamentos</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="profile" className="space-y-4">
+          <section>
+            <PagadorInfoCard
+              pagador={pagadorData}
+              selectedPeriod={selectedPeriod}
+              summary={summaryPreview}
+            />
+          </section>
+          {canEdit && pagadorData.shareCode ? (
+            <PagadorSharingCard
+              pagadorId={pagador.id}
+              shareCode={pagadorData.shareCode}
+              shares={pagadorSharesData}
+            />
+          ) : null}
+        </TabsContent>
+
+        <TabsContent value="painel" className="space-y-4">
+          <section className="grid gap-4 lg:grid-cols-2">
+            <PagadorMonthlySummaryCard
+              periodLabel={periodLabel}
+              breakdown={monthlyBreakdown}
+            />
+            <PagadorHistoryCard data={historyData} />
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-2">
+            <PagadorCardUsageCard items={cardUsage} />
+            <PagadorBoletoCard stats={boletoStats} />
+          </section>
+        </TabsContent>
+
+        <TabsContent value="lancamentos">
+          <section className="flex flex-col gap-4">
+            <LancamentosSection
+              lancamentos={lancamentosData}
+              pagadorOptions={optionSets.pagadorOptions}
+              splitPagadorOptions={optionSets.splitPagadorOptions}
+              defaultPagadorId={pagador.id}
+              contaOptions={optionSets.contaOptions}
+              cartaoOptions={optionSets.cartaoOptions}
+              categoriaOptions={optionSets.categoriaOptions}
+              pagadorFilterOptions={pagadorFilterOptions}
+              categoriaFilterOptions={optionSets.categoriaFilterOptions}
+              contaCartaoFilterOptions={optionSets.contaCartaoFilterOptions}
+              selectedPeriod={selectedPeriod}
+              allowCreate={canEdit}
+            />
+          </section>
+        </TabsContent>
+      </Tabs>
+    </main>
+  );
+}
+
+const normalizeOptionLabel = (value: string | null | undefined, fallback: string) =>
+  value?.trim().length ? value.trim() : fallback;
+
+function buildReadOnlyOptionSets(
+  items: LancamentoItem[],
+  pagador: typeof pagadores.$inferSelect
+): OptionSet {
+  const pagadorLabel = normalizeOptionLabel(pagador.name, "Pagador");
+  const pagadorOptions: SelectOption[] = [
+    {
+      value: pagador.id,
+      label: pagadorLabel,
+      slug: pagador.id,
+    },
+  ];
+
+  const contaOptionsMap = new Map<string, SelectOption>();
+  const cartaoOptionsMap = new Map<string, SelectOption>();
+  const categoriaOptionsMap = new Map<string, SelectOption>();
+
+  items.forEach((item) => {
+    if (item.contaId && !contaOptionsMap.has(item.contaId)) {
+      contaOptionsMap.set(item.contaId, {
+        value: item.contaId,
+        label: normalizeOptionLabel(item.contaName, "Conta sem nome"),
+        slug: item.contaId,
+      });
+    }
+    if (item.cartaoId && !cartaoOptionsMap.has(item.cartaoId)) {
+      cartaoOptionsMap.set(item.cartaoId, {
+        value: item.cartaoId,
+        label: normalizeOptionLabel(item.cartaoName, "Cartão sem nome"),
+        slug: item.cartaoId,
+      });
+    }
+    if (item.categoriaId && !categoriaOptionsMap.has(item.categoriaId)) {
+      categoriaOptionsMap.set(item.categoriaId, {
+        value: item.categoriaId,
+        label: normalizeOptionLabel(item.categoriaName, "Categoria"),
+        slug: item.categoriaId,
+      });
+    }
+  });
+
+  const contaOptions = Array.from(contaOptionsMap.values());
+  const cartaoOptions = Array.from(cartaoOptionsMap.values());
+  const categoriaOptions = Array.from(categoriaOptionsMap.values());
+
+  const pagadorFilterOptions: LancamentoFilterOption[] = [
+    { slug: pagador.id, label: pagadorLabel },
+  ];
+
+  const categoriaFilterOptions: LancamentoFilterOption[] = categoriaOptions.map(
+    (option) => ({
+      slug: option.value,
+      label: option.label,
+    })
+  );
+
+  const contaCartaoFilterOptions: ContaCartaoFilterOption[] = [
+    ...contaOptions.map((option) => ({
+      slug: option.value,
+      label: option.label,
+      kind: "conta" as const,
+    })),
+    ...cartaoOptions.map((option) => ({
+      slug: option.value,
+      label: option.label,
+      kind: "cartao" as const,
+    })),
+  ];
+
+  return {
+    pagadorOptions,
+    splitPagadorOptions: [],
+    defaultPagadorId: pagador.id,
+    contaOptions,
+    cartaoOptions,
+    categoriaOptions,
+    pagadorFilterOptions,
+    categoriaFilterOptions,
+    contaCartaoFilterOptions,
+  };
+}
