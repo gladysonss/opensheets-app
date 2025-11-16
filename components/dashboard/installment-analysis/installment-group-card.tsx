@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils/ui";
-import { RiArrowDownSLine, RiArrowRightSLine, RiCreditCardLine } from "@remixicon/react";
+import { RiArrowDownSLine, RiArrowRightSLine, RiBankCard2Line } from "@remixicon/react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Image from "next/image";
@@ -80,7 +80,7 @@ export function InstallmentGroupCard({
                     />
                   ) : (
                     <div className="flex size-6 shrink-0 items-center justify-center rounded bg-muted">
-                      <RiCreditCardLine className="size-4 text-muted-foreground" />
+                      <RiBankCard2Line className="size-4 text-muted-foreground" />
                     </div>
                   )}
                   <p className="text-sm font-bold">{group.name}</p>
