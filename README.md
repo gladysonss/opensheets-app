@@ -1,6 +1,8 @@
 # OpenSheets
 
-> Uma aplicação moderna e completa construída com **Next.js 16**, **Better Auth**, **Drizzle ORM**, **PostgreSQL** e **shadcn/ui**.
+> Projeto pessoal de gestão financeira. Self-hosted, manual e open source.
+
+> **⚠️ Não há versão online hospedada.** Você precisa clonar o repositório e rodar localmente ou no seu próprio servidor.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -23,23 +25,78 @@
 - [Configuração de Variáveis de Ambiente](#-configuração-de-variáveis-de-ambiente)
 - [Banco de Dados](#-banco-de-dados)
 - [Arquitetura](#-arquitetura)
-- [Troubleshooting](#-troubleshooting)
 - [Contribuindo](#-contribuindo)
 
 ---
 
 ## 🎯 Sobre o Projeto
 
-**OpenSheets** é uma aplicação full-stack moderna projetada para controle de finanças pessoais. Construída com as melhores práticas de desenvolvimento e ferramentas de ponta, oferece uma base sólida e escalável para gestão financeira completa.
+**OpenSheets** é um projeto pessoal de gestão financeira que criei para organizar minhas próprias finanças. Cansei de usar planilhas desorganizadas e aplicativos que não fazem exatamente o que preciso, então decidi construir algo do jeito que funciona pra mim.
 
-### Por que usar o OpenSheets?
+A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartões, gastos e receitas de forma clara. Se isso for útil pra você também, fique à vontade para usar e contribuir.
 
-- ✅ **Pronto para Produção** - Docker, health checks, migrations automáticas
-- ✅ **TypeScript First** - Type safety em toda a aplicação
-- ✅ **Autenticação Completa** - Better Auth com OAuth, email magic links
-- ✅ **ORM Moderno** - Drizzle com Drizzle Studio integrado
-- ✅ **UI Components** - shadcn/ui com design system completo
-- ✅ **Developer Experience** - Hot reload, Turbopack, ESLint configurado
+### ⚠️ Avisos importantes
+
+**1. Não há versão hospedada online**
+
+Este projeto é self-hosted. Você precisa rodar no seu próprio computador ou servidor. Não existe uma versão pública online onde você pode simplesmente criar uma conta.
+
+**2. Não há Open Finance**
+
+Você precisa registrar manualmente suas transações. Se você procura algo que sincroniza automaticamente com seu banco, este projeto não é pra você.
+
+**3. Requer disciplina**
+
+O OpenSheets funciona melhor para quem:
+
+- Tem disciplina de registrar os gastos regularmente
+- Quer controle total sobre seus dados
+- Gosta de entender exatamente onde o dinheiro está indo
+- Sabe rodar projetos localmente ou tem vontade de aprender
+
+Se você não se importa em dedicar alguns minutos por dia (ou semana) para manter tudo atualizado, vai funcionar bem. Caso contrário, provavelmente vai abandonar depois de uma semana.
+
+### O que tem aqui
+
+💰 **Controle de contas e transações**
+
+- Registre suas contas bancárias, cartões e dinheiro em espécie
+- Adicione receitas, despesas e transferências entre contas
+- Organize tudo por categorias (moradia, alimentação, transporte, etc.)
+- Veja o saldo atual de cada conta
+
+📊 **Relatórios e gráficos**
+
+- Dashboard com resumo mensal das suas finanças
+- Gráficos de evolução do patrimônio
+- Comparação de gastos por categoria
+- Entenda pra onde seu dinheiro está indo
+
+💳 **Faturas de cartão de crédito**
+
+- Cadastre seus cartões e acompanhe as faturas
+- Veja o que ainda não foi fechado na fatura atual
+- Controle de limites e vencimentos
+
+🎯 **Orçamentos**
+
+- Defina quanto quer gastar por categoria no mês
+- Acompanhe se está dentro do planejado
+
+### Stack técnica
+
+Construído com tecnologias modernas que facilitam o desenvolvimento:
+
+- **Next.js 16** com App Router e Turbopack
+- **TypeScript** em tudo
+- **PostgreSQL 18** como banco de dados
+- **Drizzle ORM** para trabalhar com o banco
+- **Better Auth** para login (email + OAuth)
+- **shadcn/ui** para os componentes da interface
+- **Docker** para facilitar deploy e desenvolvimento
+- **Tailwind CSS** para estilização
+
+O projeto é open source, seus dados ficam no seu controle (pode rodar localmente ou no seu próprio servidor), e você pode customizar o que quiser.
 
 ---
 
@@ -727,242 +784,6 @@ opensheets/
 
 ---
 
-## 🆘 Troubleshooting
-
-### Erro: "DATABASE_URL env variable is not set"
-
-**Causa:** Arquivo `.env` não existe ou `DATABASE_URL` não configurado
-
-**Solução:**
-
-```bash
-cp .env.example .env
-# Edite .env e configure DATABASE_URL
-```
-
----
-
-### Container do app não conecta ao banco
-
-**Causa:** `DATABASE_URL` usa `localhost` em vez de `db`
-
-**Solução:**
-
-Para Docker, use o **nome do serviço**:
-
-```env
-# ❌ Errado (localhost não funciona dentro do container)
-DATABASE_URL=postgresql://opensheets:senha@localhost:5432/opensheets_db
-
-# ✅ Correto (usa nome do serviço Docker)
-DATABASE_URL=postgresql://opensheets:senha@db:5432/opensheets_db
-```
-
-Para desenvolvimento local (sem Docker app):
-
-```env
-# ✅ Correto (app roda local, banco em Docker)
-DATABASE_URL=postgresql://opensheets:senha@localhost:5432/opensheets_db
-```
-
-**Verifique o status do banco:**
-
-```bash
-docker compose ps
-docker compose logs db
-```
-
----
-
-### Porta 3000 ou 5432 já está em uso
-
-**Solução:**
-
-Edite o `.env`:
-
-```env
-APP_PORT=3001
-DB_PORT=5433
-```
-
-Ou pare o processo que está usando:
-
-```bash
-# Descobrir quem usa a porta
-lsof -i :3000
-lsof -i :5432
-
-# Matar processo
-kill -9 <PID>
-```
-
----
-
-### Migrations não rodam
-
-**Com Docker:**
-
-Migrations rodam automaticamente no startup. Veja logs:
-
-```bash
-pnpm docker:logs:app
-```
-
-Se falharem, rode manualmente:
-
-```bash
-docker compose exec app pnpm db:push
-```
-
-**Sem Docker:**
-
-```bash
-pnpm db:push
-```
-
----
-
-### Erro: "server.js not found"
-
-**Causa:** Next.js não gerou standalone build
-
-**Solução:**
-
-1. Verifique `next.config.ts`:
-
-```typescript
-const nextConfig: NextConfig = {
-  output: "standalone", // ← Deve estar presente
-};
-```
-
-2. Rebuild:
-
-```bash
-docker compose down
-docker compose up --build
-```
-
----
-
-### Erro ao atualizar PostgreSQL 16 → 18
-
-**Causa:** Volumes antigos são incompatíveis
-
-**Solução:**
-
-```bash
-# ⚠️ ATENÇÃO: Isso apaga dados do banco local!
-docker compose down -v
-
-# Suba novamente com PostgreSQL 18
-docker compose up --build
-```
-
-**Para preservar dados:**
-
-```bash
-# 1. Backup
-docker compose exec db pg_dumpall -U opensheets > backup.sql
-
-# 2. Limpa volumes
-docker compose down -v
-
-# 3. Sobe PG 18
-docker compose up -d db
-
-# 4. Aguarda (15s)
-sleep 15
-
-# 5. Restaura
-docker compose exec -T db psql -U opensheets -d opensheets_db < backup.sql
-```
-
----
-
-### Drizzle Studio não abre
-
-**Solução:**
-
-1. Verifique se o banco está rodando:
-
-```bash
-docker compose ps
-```
-
-2. Teste conexão:
-
-```bash
-psql $DATABASE_URL
-```
-
-3. Abra Drizzle Studio:
-
-```bash
-pnpm db:studio
-```
-
----
-
-### Build do Docker muito lento
-
-**Causa:** Cache não está sendo aproveitado
-
-**Solução:**
-
-1. Use BuildKit:
-
-```bash
-export DOCKER_BUILDKIT=1
-docker compose build
-```
-
-2. Limpe cache antigo:
-
-```bash
-docker builder prune
-```
-
-3. Multi-stage build já otimiza camadas
-
----
-
-### "Permission denied" ao rodar Docker
-
-**Causa:** Usuário não está no grupo docker
-
-**Solução (Linux):**
-
-```bash
-sudo usermod -aG docker $USER
-newgrp docker
-```
-
-**Solução (Mac/Windows):**
-
-- Docker Desktop deve estar rodando
-- Verifique configurações de permissão
-
----
-
-### Limpar tudo e começar do zero
-
-```bash
-# Para containers e remove volumes
-docker compose down -v
-
-# Remove images não usadas
-docker system prune -a
-
-# Remove TUDO do Docker (cuidado!)
-docker system prune -a --volumes
-
-# Rebuild do zero
-pnpm docker:up
-```
-
----
-
 ## 🤝 Contribuindo
 
 Contribuições são muito bem-vindas!
@@ -991,7 +812,6 @@ Contribuições são muito bem-vindas!
 ### Padrões
 
 - Use **TypeScript**
-- Siga o **ESLint** configurado
 - Documente **features novas**
 - Use **commits semânticos** (feat, fix, docs, etc)
 

@@ -178,6 +178,11 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px; /* Offset para o header sticky */
+  }
+
   body {
     @apply bg-background text-foreground;
   }
