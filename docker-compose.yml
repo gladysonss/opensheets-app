@@ -33,10 +33,10 @@ services:
       # Configurações de performance
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
 
-    #ports:
+    ports:
       # Mapeia porta 5432 do container para 5432 do host
       # Útil para conectar com ferramentas externas (ex: DBeaver, pgAdmin)
-    #  - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-5432}:5432"
 
     volumes:
       # Volume nomeado para persistência de dados
@@ -73,9 +73,9 @@ services:
     container_name: opensheets_app
     restart: unless-stopped
 
-    #ports:
+    ports:
       # Mapeia porta 3000 do container para 3000 do host
-    #  - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3000}:3000"
 
     environment:
       # Variáveis de ambiente da aplicação
