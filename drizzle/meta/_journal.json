@@ -8,6 +8,34 @@
       "when": 1762993507299,
       "tag": "0000_flashy_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1764429682842,
+      "tag": "0001_fixed_blackheart",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1764430212816,
+      "tag": "0002_certain_bloodstrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1764430368312,
+      "tag": "0003_flimsy_boomerang",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764431144201,
+      "tag": "0004_careless_kronos",
+      "breakpoints": true
     }
   ]
 }

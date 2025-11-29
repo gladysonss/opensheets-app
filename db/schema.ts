@@ -20,6 +20,7 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("emailVerified").notNull(),
   image: text("image"),
+  apiToken: text("api_token").unique(),
   createdAt: timestamp("createdAt", {
     mode: "date",
     withTimezone: true,

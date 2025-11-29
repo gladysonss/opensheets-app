@@ -1,0 +1,1 @@
+ALTER TABLE "pagador_shares" ADD COLUMN "created_at" timestamp NOT NULL;
