@@ -1,10 +1,10 @@
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import type { DashboardNotificationsSnapshot } from "@/lib/dashboard/notifications";
-import LogoutButton from "./auth/logout-button";
 import { AnimatedThemeToggler } from "./animated-theme-toggler";
 import { PrivacyModeToggle } from "./privacy-mode-toggle";
 import { CalculatorDialogButton } from "./calculadora/calculator-dialog";
+import { UserNav } from "./user-nav";
 
 type SiteHeaderProps = {
   notificationsSnapshot: DashboardNotificationsSnapshot;
@@ -24,7 +24,7 @@ export function SiteHeader({ notificationsSnapshot }: SiteHeaderProps) {
           />
           <PrivacyModeToggle />
           <AnimatedThemeToggler />
-          <LogoutButton />
+          <UserNav />
         </div>
       </div>
     </header>
