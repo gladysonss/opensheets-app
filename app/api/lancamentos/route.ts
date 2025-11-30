@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { LANCAMENTO_TRANSACTION_TYPES } from "@/lib/lancamentos/constants";
 
@@ -166,6 +166,133 @@ export async function POST(request: Request) {
 
   } catch (e: any) {
     console.error("Erro ao criar lançamento(s) via API:", e);
+    return new NextResponse(JSON.stringify({ error: "Ocorreu um erro interno no servidor.", details: e.message }), { status: 500, headers: { "Content-Type": "application/json" } });
+  }
+}
+
+// Schema para a requisição de deleção
+const deleteSchema = z.object({
+  ids: z.array(z.string().uuid("Cada ID no array deve ser um UUID válido.")).min(1, "O array de IDs não pode ser vazio."),
+});
+
+// DELETE /api/lancamentos - Deleta um ou mais lançamentos
+export async function DELETE(request: Request) {
+  try {
+    // 1. Autenticação
+    const { user, error, status } = await authenticateRequest(request);
+    if (error || !user) {
+      return new NextResponse(JSON.stringify({ error: error || "Usuário não encontrado" }), { status, headers: { "Content-Type": "application/json" } });
+    }
+
+    // 2. Validação do Corpo da Requisição
+    const body = await request.json();
+    const validation = deleteSchema.safeParse(body);
+
+    if (!validation.success) {
+      return new NextResponse(JSON.stringify({ error: "Dados inválidos", details: validation.error.flatten() }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+
+    const { ids } = validation.data;
+
+    // 3. Execução no Banco de Dados
+    const deleted = await db.delete(schema.lancamentos).where(
+      and(
+        inArray(schema.lancamentos.id, ids), // Deleta onde o ID está na lista fornecida
+        eq(schema.lancamentos.userId, user.id) // E o lançamento pertence ao usuário autenticado
+      )
+    ).returning({
+        id: schema.lancamentos.id
+    });
+
+    // 4. Resposta
+    return new NextResponse(JSON.stringify({
+      message: `${deleted.length} lançamento(s) foram deletados com sucesso.`,
+      deletedIds: deleted.map(d => d.id),
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  } catch (e: any) {
+    console.error("Erro ao deletar lançamento(s) via API:", e);
+    return new NextResponse(JSON.stringify({ error: "Ocorreu um erro interno no servidor.", details: e.message }), { status: 500, headers: { "Content-Type": "application/json" } });
+  }
+}
+
+// Schema para um item de atualização em massa
+const updateLancamentoSchema = z.object({
+  id: z.string().uuid("ID de lançamento inválido."),
+  name: z.string().min(1, "O nome não pode ser vazio.").optional(),
+  amount: z.number().optional(),
+  purchaseDate: z.string().refine((date) => !isNaN(Date.parse(date)), { message: "Data inválida." }).optional(),
+  transactionType: z.enum(LANCAMENTO_TRANSACTION_TYPES).optional(),
+  pagadorId: z.string().uuid("ID de pagador inválido.").optional().nullable(),
+  contaId: z.string().uuid("ID de conta inválido.").optional().nullable(),
+  categoriaId: z.string().uuid("ID de categoria inválido.").optional().nullable(),
+  note: z.string().optional().nullable(),
+});
+
+// Schema para a requisição de atualização em massa
+const updateBulkSchema = z.array(updateLancamentoSchema).min(1, "A requisição deve conter ao menos um item para atualizar.");
+
+// PUT /api/lancamentos - Atualiza um ou mais lançamentos
+export async function PUT(request: Request) {
+  try {
+    const { user, error, status } = await authenticateRequest(request);
+    if (error || !user) {
+      return new NextResponse(JSON.stringify({ error: error || "Usuário não encontrado" }), { status, headers: { "Content-Type": "application/json" } });
+    }
+
+    const body = await request.json();
+    const validation = updateBulkSchema.safeParse(body);
+
+    if (!validation.success) {
+      return new NextResponse(JSON.stringify({ error: "Dados inválidos", details: validation.error.flatten() }), { status: 400, headers: { "Content-Type": "application/json" } });
+    }
+
+    const updates = validation.data;
+    let updatedCount = 0;
+    const updatedIds: string[] = [];
+
+    await db.transaction(async (tx) => {
+      for (const update of updates) {
+        const { id, ...fieldsToUpdate } = update;
+
+        if (Object.keys(fieldsToUpdate).length === 0) {
+          continue;
+        }
+
+        const finalFields: Partial<typeof schema.lancamentos.$inferInsert> = { ...fieldsToUpdate };
+
+        if (fieldsToUpdate.purchaseDate) {
+          finalFields.period = fieldsToUpdate.purchaseDate.slice(0, 7);
+          finalFields.purchaseDate = new Date(fieldsToUpdate.purchaseDate);
+        }
+
+        if (fieldsToUpdate.amount !== undefined) {
+          const newAmount = fieldsToUpdate.amount;
+          const newTransactionType = fieldsToUpdate.transactionType ?? (newAmount < 0 ? 'Despesa' : 'Receita');
+          const amountSign = newTransactionType === 'Despesa' ? -1 : 1;
+          finalFields.amount = (Math.abs(newAmount) * amountSign).toFixed(2);
+          finalFields.transactionType = newTransactionType;
+        }
+
+        const [result] = await tx.update(schema.lancamentos)
+          .set(finalFields)
+          .where(and(eq(schema.lancamentos.id, id), eq(schema.lancamentos.userId, user.id)))
+          .returning({ id: schema.lancamentos.id });
+        
+        if (result) {
+          updatedCount++;
+          updatedIds.push(result.id);
+        }
+      }
+    });
+
+    return new NextResponse(JSON.stringify({
+      message: `${updatedCount} lançamento(s) foram atualizados com sucesso.`,
+      updatedIds: updatedIds,
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  } catch (e: any) {
+    console.error("Erro ao atualizar lançamento(s) via API:", e);
     return new NextResponse(JSON.stringify({ error: "Ocorreu um erro interno no servidor.", details: e.message }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
