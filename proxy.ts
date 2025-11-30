@@ -23,12 +23,12 @@ export async function proxy(request: NextRequest) {
   const sessionCookie = getSessionCookie(request);
   const { pathname } = request.nextUrl;
 
-  // Redirect authenticated users away from login/signup pages
+  // Redireciona usuários autenticados para longe das páginas de login/signup
   if (sessionCookie && PUBLIC_AUTH_ROUTES.includes(pathname)) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Redirect unauthenticated users trying to access protected routes
+  // Redireciona usuários não autenticados tentando acessar rotas protegidas
   const isProtectedRoute = PROTECTED_ROUTES.some((route) =>
     pathname.startsWith(route)
   );
@@ -41,20 +41,14 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Apply middleware to protected and auth routes
+  /*
+   * Corresponde a todos os caminhos de requisição, exceto aqueles que começam com:
+   * - api (rotas de API)
+   * - _next/static (arquivos estáticos)
+   * - _next/image (arquivos de otimização de imagem)
+   * - favicon.ico (arquivo de favicon)
+   */
   matcher: [
-    "/ajustes/:path*",
-    "/anotacoes/:path*",
-    "/calendario/:path*",
-    "/cartoes/:path*",
-    "/categorias/:path*",
-    "/contas/:path*",
-    "/dashboard/:path*",
-    "/insights/:path*",
-    "/lancamentos/:path*",
-    "/orcamentos/:path*",
-    "/pagadores/:path*",
-    "/login",
-    "/signup",
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };

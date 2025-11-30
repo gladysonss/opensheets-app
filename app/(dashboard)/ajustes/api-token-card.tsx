@@ -14,6 +14,7 @@ import { generateApiToken } from "./actions";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface ApiTokenCardProps {
   token: string | null;
@@ -27,6 +28,7 @@ const initialState = {
 export function ApiTokenCard({ token: initialToken }: ApiTokenCardProps) {
   const [state, formAction] = useFormState(generateApiToken, initialState);
   const [token, setToken] = useState(initialToken);
+  const [isTokenVisible, setIsTokenVisible] = useState(false);
 
   useEffect(() => {
     if (state.token) {
@@ -65,8 +67,30 @@ export function ApiTokenCard({ token: initialToken }: ApiTokenCardProps) {
           <div className="space-y-2">
             <Label htmlFor="api-token">Seu Token</Label>
             <div className="flex items-center gap-2">
-              <Input id="api-token" type="text" readOnly value={token ?? 'Nenhum token gerado ainda'} />
-              <Button type="button" variant="outline" onClick={copyToClipboard} disabled={!token}>
+              <Input
+                id="api-token"
+                type={isTokenVisible ? 'text' : 'password'}
+                readOnly
+                value={token ?? 'Nenhum token gerado ainda'}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setIsTokenVisible((prev) => !prev)}
+                disabled={!token}
+              >
+                {isTokenVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                <span className="sr-only">
+                  {isTokenVisible ? 'Esconder token' : 'Mostrar token'}
+                </span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={copyToClipboard}
+                disabled={!token}
+              >
                 Copiar
               </Button>
             </div>
