@@ -4,7 +4,7 @@ import type { DashboardNotificationsSnapshot } from "@/lib/dashboard/notificatio
 import { AnimatedThemeToggler } from "./animated-theme-toggler";
 import { PrivacyModeToggle } from "./privacy-mode-toggle";
 import { CalculatorDialogButton } from "./calculadora/calculator-dialog";
-import { UserNav } from "./user-nav";
+import LogoutButton from "./auth/logout-button";
 
 type SiteHeaderProps = {
   notificationsSnapshot: DashboardNotificationsSnapshot;
@@ -24,7 +24,7 @@ export function SiteHeader({ notificationsSnapshot }: SiteHeaderProps) {
           />
           <PrivacyModeToggle />
           <AnimatedThemeToggler />
-          <UserNav />
+          <LogoutButton />
         </div>
       </div>
     </header>

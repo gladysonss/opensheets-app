@@ -1,4 +1,4 @@
-"use server";
+'use server';
 
 import { auth } from "@/lib/auth/config";
 import { db, schema } from "@/lib/db";
@@ -6,6 +6,7 @@ import { eq, and, ne } from "drizzle-orm";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { randomBytes } from 'crypto';
 
 type ActionResponse<T = void> = {
   success: boolean;
@@ -50,6 +51,35 @@ const deleteAccountSchema = z.object({
 
 // Actions
 
+export async function generateApiToken(
+  _prevState: { token: string | null; error: string | null },
+  _formData: FormData
+): Promise<{ token: string | null; error: string | null }> {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return { token: null, error: "Não autenticado" };
+    }
+
+    const newToken = randomBytes(24).toString('base64url');
+
+    await db
+      .update(schema.user)
+      .set({ apiToken: newToken })
+      .where(eq(schema.user.id, session.user.id));
+
+    revalidatePath("/ajustes");
+
+    return { token: newToken, error: null };
+  } catch (error) {
+    console.error("Erro ao gerar token de API:", error);
+    return { token: null, error: "Ocorreu um erro ao gerar o token. Tente novamente." };
+  }
+}
+
 export async function updateNameAction(
   data: z.infer<typeof updateNameSchema>
 ): Promise<ActionResponse> {
@@ -73,7 +103,6 @@ export async function updateNameAction(
       .set({ name: fullName })
       .where(eq(schema.user.id, session.user.id));
 
-    // Revalidar o layout do dashboard para atualizar a sidebar
     revalidatePath("/", "layout");
 
     return {
@@ -113,7 +142,6 @@ export async function updatePasswordAction(
 
     const validated = updatePasswordSchema.parse(data);
 
-    // Verificar se o usuário tem conta com provedor Google
     const userAccount = await db.query.account.findFirst({
       where: and(
         eq(schema.account.userId, session.user.id),
@@ -128,7 +156,6 @@ export async function updatePasswordAction(
       };
     }
 
-    // Usar a API do Better Auth para atualizar a senha
     try {
       await auth.api.changePassword({
         body: {
@@ -145,7 +172,6 @@ export async function updatePasswordAction(
     } catch (authError: any) {
       console.error("Erro na API do Better Auth:", authError);
 
-      // Verificar se o erro é de senha incorreta
       if (authError?.message?.includes("password") || authError?.message?.includes("incorrect")) {
         return {
           success: false,
@@ -191,7 +217,6 @@ export async function updateEmailAction(
 
     const validated = updateEmailSchema.parse(data);
 
-    // Verificar se o usuário tem conta com provedor Google
     const userAccount = await db.query.account.findFirst({
       where: and(
         eq(schema.account.userId, session.user.id),
@@ -201,7 +226,6 @@ export async function updateEmailAction(
 
     const isGoogleAuth = !!userAccount;
 
-    // Se não for Google OAuth, validar senha
     if (!isGoogleAuth) {
       if (!validated.password) {
         return {
@@ -210,8 +234,6 @@ export async function updateEmailAction(
         };
       }
 
-      // Validar senha tentando fazer changePassword para a mesma senha
-      // Se falhar, a senha atual está incorreta
       try {
         await auth.api.changePassword({
           body: {
@@ -221,7 +243,6 @@ export async function updateEmailAction(
           headers: await headers(),
         });
       } catch (authError: any) {
-        // Se der erro é porque a senha está incorreta
         console.error("Erro ao validar senha:", authError);
         return {
           success: false,
@@ -230,7 +251,6 @@ export async function updateEmailAction(
       }
     }
 
-    // Verificar se o e-mail já está em uso por outro usuário
     const existingUser = await db.query.user.findFirst({
       where: and(
         eq(schema.user.email, validated.newEmail),
@@ -245,7 +265,6 @@ export async function updateEmailAction(
       };
     }
 
-    // Verificar se o novo e-mail é diferente do atual
     if (validated.newEmail.toLowerCase() === session.user.email.toLowerCase()) {
       return {
         success: false,
@@ -253,16 +272,14 @@ export async function updateEmailAction(
       };
     }
 
-    // Atualizar e-mail
     await db
       .update(schema.user)
       .set({
         email: validated.newEmail,
-        emailVerified: false, // Marcar como não verificado
+        emailVerified: false, 
       })
       .where(eq(schema.user.id, session.user.id));
 
-    // Revalidar o layout do dashboard para atualizar a sidebar
     revalidatePath("/", "layout");
 
     return {
@@ -301,11 +318,8 @@ export async function deleteAccountAction(
       };
     }
 
-    // Validar confirmação
     deleteAccountSchema.parse(data);
 
-    // Deletar todos os dados do usuário em cascade
-    // O schema deve ter as relações configuradas com onDelete: cascade
     await db.delete(schema.user).where(eq(schema.user.id, session.user.id));
 
     return {

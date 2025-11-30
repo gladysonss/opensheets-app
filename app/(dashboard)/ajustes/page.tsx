@@ -9,6 +9,7 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { ApiTokenCard } from "./api-token-card";
 
 export default async function Page() {
   const session = await auth.api.getSession({
@@ -19,26 +20,34 @@ export default async function Page() {
     redirect("/");
   }
 
-  const userName = session.user.name || "";
-  const userEmail = session.user.email || "";
+  const user = await db.query.user.findFirst({
+    where: eq(schema.user.id, session.user.id),
+  });
 
-  // Detectar método de autenticação (Google OAuth vs E-mail/Senha)
+  if (!user) {
+    redirect("/");
+  }
+
+  const userName = user.name || "";
+  const userEmail = user.email || "";
+  const apiToken = user.apiToken;
+
   const userAccount = await db.query.account.findFirst({
     where: eq(schema.account.userId, session.user.id),
   });
 
-  // Se o providerId for "google", o usuário usa Google OAuth
   const authProvider = userAccount?.providerId || "credential";
 
   return (
     <div className="max-w-3xl">
       <Tabs defaultValue="nome" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 mb-2">
-          <TabsTrigger value="nome">Altere seu nome</TabsTrigger>
-          <TabsTrigger value="senha">Alterar senha</TabsTrigger>
-          <TabsTrigger value="email">Alterar e-mail</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-5 mb-2">
+          <TabsTrigger value="nome">Seu Nome</TabsTrigger>
+          <TabsTrigger value="senha">Senha</TabsTrigger>
+          <TabsTrigger value="email">E-mail</TabsTrigger>
+          <TabsTrigger value="token">Token de API</TabsTrigger>
           <TabsTrigger value="deletar" className="text-destructive">
-            Deletar conta
+            Deletar Conta
           </TabsTrigger>
         </TabsList>
 
@@ -47,8 +56,7 @@ export default async function Page() {
             <div>
               <h2 className="text-lg font-medium mb-1">Alterar nome</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Atualize como seu nome aparece no Opensheets. Esse nome pode ser
-                exibido em diferentes seções do app e em comunicações.
+                Atualize como seu nome aparece no Opensheets.
               </p>
             </div>
             <UpdateNameForm currentName={userName} />
@@ -68,9 +76,7 @@ export default async function Page() {
             <div>
               <h2 className="text-lg font-medium mb-1">Alterar e-mail</h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Atualize o e-mail associado à sua conta. Você precisará
-                confirmar os links enviados para o novo e também para o e-mail
-                atual (quando aplicável) para concluir a alteração.
+                Atualize o e-mail associado à sua conta.
               </p>
             </div>
             <UpdateEmailForm
@@ -79,14 +85,17 @@ export default async function Page() {
             />
           </TabsContent>
 
+          <TabsContent value="token" className="space-y-4">
+            <ApiTokenCard token={apiToken} />
+          </TabsContent>
+
           <TabsContent value="deletar" className="space-y-4">
             <div>
               <h2 className="text-lg font-medium mb-1 text-destructive">
                 Deletar conta
               </h2>
               <p className="text-sm text-muted-foreground mb-4">
-                Ao prosseguir, sua conta e todos os dados associados serão
-                excluídos de forma irreversível.
+                Sua conta e todos os dados serão excluídos permanentemente.
               </p>
             </div>
             <DeleteAccountForm />
