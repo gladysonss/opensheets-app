@@ -53,7 +53,7 @@ export function AppSidebar({
               asChild
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
-              <a href="/dashboard">
+              <a href="/dashboard" className="flex-shrink-0">
                 <LogoContent />
               </a>
             </SidebarMenuButton>

@@ -9,11 +9,10 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useFormState } from "react-dom";
 import { generateApiToken } from "./actions";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useActionState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 interface ApiTokenCardProps {
@@ -26,7 +25,7 @@ const initialState = {
 };
 
 export function ApiTokenCard({ token: initialToken }: ApiTokenCardProps) {
-  const [state, formAction] = useFormState(generateApiToken, initialState);
+  const [state, formAction] = useActionState(generateApiToken, initialState);
   const [token, setToken] = useState(initialToken);
   const [isTokenVisible, setIsTokenVisible] = useState(false);
 

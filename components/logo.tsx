@@ -21,7 +21,7 @@ export function Logo({ variant = "full", className }: LogoProps) {
   }
 
   return (
-    <div className={cn("flex items-center", className)}>
+    <div className={cn("flex items-center gap-2", className)}>
       <Image
         src="/logo_small.png"
         alt="Opensheets"
