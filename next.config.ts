@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   experimental: {
     turbopackFileSystemCacheForDev: true,
   },
+  allowedDevOrigins: ["192.168.3.10", "192.168.3.10:3000"],
   reactCompiler: true,
   typescript: {
     ignoreBuildErrors: true,

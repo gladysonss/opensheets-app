@@ -110,7 +110,7 @@ export function MassAddDialog({
   // Transaction rows
   const [transactions, setTransactions] = useState<TransactionRow[]>([
     {
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substring(2, 15),
       purchaseDate: getTodayDateString(),
       name: "",
       amount: "",
@@ -136,7 +136,7 @@ export function MassAddDialog({
     setTransactions([
       ...transactions,
       {
-        id: crypto.randomUUID(),
+        id: Math.random().toString(36).substring(2, 15),
         purchaseDate: getTodayDateString(),
         name: "",
         amount: "",
@@ -221,7 +221,7 @@ export function MassAddDialog({
       setCartaoId(undefined);
       setTransactions([
         {
-          id: crypto.randomUUID(),
+          id: Math.random().toString(36).substring(2, 15),
           purchaseDate: getTodayDateString(),
           name: "",
           amount: "",

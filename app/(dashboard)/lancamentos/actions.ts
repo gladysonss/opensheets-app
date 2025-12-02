@@ -1073,9 +1073,9 @@ const massAddTransactionSchema = z.object({
       message: "Data da transação inválida.",
     }),
   name: z
-    .string({ message: "Informe o estabelecimento." })
+    .string({ message: "Informe a descrição." })
     .trim()
-    .min(1, "Informe o estabelecimento."),
+    .min(1, "Informe a descrição."),
   amount: z.coerce
     .number({ message: "Informe o valor da transação." })
     .min(0, "Informe um valor maior ou igual a zero."),
