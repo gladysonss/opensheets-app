@@ -31,7 +31,7 @@ import { RiAddLine, RiDeleteBinLine } from "@remixicon/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EstabelecimentoInput } from "../shared/estabelecimento-input";
-import type { SelectOption } from "../../types";
+import type { SelectOption } from "../types";
 import {
   CategoriaSelectContent,
   ConditionSelectContent,
@@ -56,10 +56,10 @@ interface MassAddDialogProps {
 
 export interface MassAddFormData {
   fixedFields: {
-    transactionType?: string;
+    transactionType?: "Despesa" | "Receita" | "Transferência";
     pagadorId?: string;
-    paymentMethod?: string;
-    condition?: string;
+    paymentMethod?: "Cartão de crédito" | "Pix" | "Boleto" | "Dinheiro" | "Cartão de débito";
+    condition?: "À vista" | "Parcelado" | "Recorrente";
     period?: string;
     contaId?: string;
     cartaoId?: string;
@@ -67,7 +67,7 @@ export interface MassAddFormData {
   transactions: Array<{
     purchaseDate: string;
     name: string;
-    amount: string;
+    amount: number;
     categoriaId?: string;
   }>;
 }
@@ -188,12 +188,13 @@ export function MassAddDialog({
     }
 
     // Build form data
+    // Build form data
     const formData: MassAddFormData = {
       fixedFields: {
-        transactionType,
+        transactionType: transactionType as "Despesa" | "Receita" | "Transferência",
         pagadorId,
-        paymentMethod,
-        condition,
+        paymentMethod: paymentMethod as "Cartão de crédito" | "Pix" | "Boleto" | "Dinheiro" | "Cartão de débito",
+        condition: condition as "À vista" | "Parcelado" | "Recorrente",
         period,
         contaId: paymentMethod !== "Cartão de crédito" ? contaId : undefined,
         cartaoId: paymentMethod === "Cartão de crédito" ? cartaoId : undefined,
@@ -201,7 +202,7 @@ export function MassAddDialog({
       transactions: transactions.map((t) => ({
         purchaseDate: t.purchaseDate,
         name: t.name.trim(),
-        amount: t.amount.trim(),
+        amount: parseFloat(t.amount.replace("R$", "").replace(/\./g, "").replace(",", ".").trim()) || 0,
         categoriaId: t.categoriaId,
       })),
     };

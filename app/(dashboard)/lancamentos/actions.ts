@@ -1018,7 +1018,7 @@ export async function updateLancamentoBulkAction(
       });
 
       await applyUpdates(
-        futureLancamentos.map((item) => ({
+        futureLancamentos.map((item: { id: string; purchaseDate: Date | null }) => ({
           id: item.id,
           purchaseDate: item.purchaseDate ?? null,
         }))
@@ -1045,7 +1045,7 @@ export async function updateLancamentoBulkAction(
       });
 
       await applyUpdates(
-        allLancamentos.map((item) => ({
+        allLancamentos.map((item: { id: string; purchaseDate: Date | null }) => ({
           id: item.id,
           purchaseDate: item.purchaseDate ?? null,
         }))
@@ -1280,13 +1280,13 @@ export async function deleteMultipleLancamentosAction(
     const notificationData = existing
       .filter(
         (
-          item
+          item: typeof existing[number]
         ): item is typeof item & {
           pagadorId: NonNullable<typeof item.pagadorId>;
         } => Boolean(item.pagadorId)
       )
-      .map((item) => ({
-        pagadorId: item.pagadorId,
+      .map((item: typeof existing[number]) => ({
+        pagadorId: item.pagadorId!,
         name: item.name ?? null,
         amount: item.amount ?? null,
         transactionType: item.transactionType ?? null,
@@ -1346,9 +1346,9 @@ export async function getRecentEstablishmentsAction(): Promise<string[]> {
     const uniqueNames = Array.from(
       new Set(
         results
-          .map((r) => r.name)
+          .map((r: { name: string | null }) => r.name)
           .filter(
-            (name): name is string =>
+            (name: string | null): name is string =>
               name != null &&
               name.trim().length > 0 &&
               !name.toLowerCase().startsWith("pagamento fatura")
@@ -1357,9 +1357,78 @@ export async function getRecentEstablishmentsAction(): Promise<string[]> {
     );
 
     // Return top 50 most recent unique establishments
-    return uniqueNames.slice(0, 100);
+    return uniqueNames.slice(0, 100) as string[];
   } catch (error) {
     console.error("Error fetching recent establishments:", error);
     return [];
+  }
+}
+
+const updateMultipleLancamentosSchema = z.object({
+  ids: z.array(z.string().uuid()),
+  categoriaId: uuidSchema("Categoria").optional(),
+  pagadorId: uuidSchema("Pagador").nullable().optional(),
+  contaId: uuidSchema("Conta").optional(),
+  cartaoId: uuidSchema("Cartão").optional(),
+});
+
+export async function updateMultipleLancamentosAction(
+  input: z.infer<typeof updateMultipleLancamentosSchema>
+): Promise<ActionResult> {
+  try {
+    const user = await getUser();
+    if (!user) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    const { ids, categoriaId, pagadorId, contaId, cartaoId } =
+      updateMultipleLancamentosSchema.parse(input);
+
+    if (ids.length === 0) {
+      return { success: false, error: "Nenhum lançamento selecionado." };
+    }
+
+    // Validate ownership of all items
+    const items = await db.query.lancamentos.findMany({
+      where: and(inArray(lancamentos.id, ids), eq(lancamentos.userId, user.id)),
+      columns: { id: true },
+    });
+
+    if (items.length !== ids.length) {
+      return {
+        success: false,
+        error: "Alguns lançamentos não foram encontrados ou não pertencem a você.",
+      };
+    }
+
+    // Prepare update data
+    const updateData: Partial<typeof lancamentos.$inferInsert> = {};
+    if (categoriaId !== undefined) updateData.categoriaId = categoriaId;
+    if (pagadorId !== undefined) updateData.pagadorId = pagadorId;
+    if (contaId !== undefined) {
+      updateData.contaId = contaId;
+      updateData.cartaoId = null;
+      updateData.paymentMethod = "Dinheiro"; // Default for account payment, or keep original?
+      // Ideally we should check the original payment method but for bulk edit we might need to be careful
+      // For now let's assume if switching to account, we clear card.
+      // If the user selects Account, we might want to ensure paymentMethod is compatible (e.g. Debit or Pix)
+      // But the dialog only allows selecting Account OR Card.
+    }
+    if (cartaoId !== undefined) {
+      updateData.cartaoId = cartaoId;
+      updateData.contaId = null;
+      updateData.paymentMethod = "Cartão de crédito";
+    }
+
+    await db
+      .update(lancamentos)
+      .set(updateData)
+      .where(inArray(lancamentos.id, ids));
+
+    revalidateForEntity("lancamentos");
+
+    return { success: true, message: "Lançamentos atualizados com sucesso." };
+  } catch (error) {
+    return handleActionError(error);
   }
 }

@@ -7,6 +7,7 @@ import {
   deleteMultipleLancamentosAction,
   toggleLancamentoSettlementAction,
   updateLancamentoBulkAction,
+  updateMultipleLancamentosAction,
 } from "@/app/(dashboard)/lancamentos/actions";
 import { ConfirmActionDialog } from "@/components/confirm-action-dialog";
 import { useCallback, useState } from "react";
@@ -15,6 +16,7 @@ import { toast } from "sonner";
 import { AnticipateInstallmentsDialog } from "../dialogs/anticipate-installments-dialog/anticipate-installments-dialog";
 import { AnticipationHistoryDialog } from "../dialogs/anticipate-installments-dialog/anticipation-history-dialog";
 import { BulkActionDialog, type BulkActionScope } from "../dialogs/bulk-action-dialog";
+import { BulkEditMultipleDialog } from "../dialogs/bulk-edit-multiple-dialog";
 import { LancamentoDetailsDialog } from "../dialogs/lancamento-details-dialog";
 import { LancamentoDialog } from "../dialogs/lancamento-dialog/lancamento-dialog";
 import { LancamentosTable } from "../table/lancamentos-table";
@@ -313,6 +315,75 @@ export function LancamentosPage({
     setAnticipationHistoryOpen(true);
   }, []);
 
+  const [bulkEditMultipleOpen, setBulkEditMultipleOpen] = useState(false);
+  const [selectedForBulkEdit, setSelectedForBulkEdit] = useState<
+    LancamentoItem[]
+  >([]);
+
+  const handleMultipleBulkEdit = useCallback((items: LancamentoItem[]) => {
+    // Filter only "À vista" items or handle mixed types if needed
+    // For now, we might want to restrict to "À vista" or just allow common fields editing
+    const validItems = items.filter(
+      (item) => item.condition === "À vista" || item.condition === "Parcelado"
+    );
+
+    if (validItems.length === 0) {
+      toast.error("Nenhum lançamento válido selecionado para edição.");
+      return;
+    }
+
+    if (validItems.length !== items.length) {
+      toast.warning(
+        "Alguns itens foram ignorados pois não suportam edição em massa."
+      );
+    }
+
+    // Validate that all items have the same transaction type
+    const firstType = validItems[0].transactionType;
+    const hasMixedTypes = validItems.some(
+      (item) => item.transactionType !== firstType
+    );
+
+    if (hasMixedTypes) {
+      toast.error(
+        "Selecione apenas lançamentos do mesmo tipo (Despesa, Receita ou Transferência) para edição em massa."
+      );
+      return;
+    }
+
+    setSelectedForBulkEdit(validItems);
+    setBulkEditMultipleOpen(true);
+  }, []);
+
+  const confirmMultipleBulkEdit = useCallback(
+    async (data: {
+      categoriaId?: string;
+      pagadorId?: string;
+      contaId?: string;
+      cartaoId?: string;
+    }) => {
+      if (selectedForBulkEdit.length === 0) {
+        return;
+      }
+
+      const ids = selectedForBulkEdit.map((item) => item.id);
+      const result = await updateMultipleLancamentosAction({
+        ids,
+        ...data,
+      });
+
+      if (!result.success) {
+        toast.error(result.error);
+        throw new Error(result.error);
+      }
+
+      toast.success(result.message);
+      setBulkEditMultipleOpen(false);
+      setSelectedForBulkEdit([]);
+    },
+    [selectedForBulkEdit]
+  );
+
   return (
     <>
       <LancamentosTable
@@ -325,6 +396,7 @@ export function LancamentosPage({
         onEdit={handleEdit}
         onConfirmDelete={handleConfirmDelete}
         onBulkDelete={handleMultipleBulkDelete}
+        onBulkEdit={handleMultipleBulkEdit}
         onViewDetails={handleViewDetails}
         onToggleSettlement={handleToggleSettlement}
         onAnticipate={handleAnticipate}
@@ -498,6 +570,18 @@ export function LancamentosPage({
           }}
         />
       )}
+
+      <BulkEditMultipleDialog
+        open={bulkEditMultipleOpen}
+        onOpenChange={setBulkEditMultipleOpen}
+        count={selectedForBulkEdit.length}
+        transactionType={selectedForBulkEdit[0]?.transactionType}
+        onConfirm={confirmMultipleBulkEdit}
+        pagadorOptions={pagadorOptions}
+        contaOptions={contaOptions}
+        cartaoOptions={cartaoOptions}
+        categoriaOptions={categoriaOptions}
+      />
     </>
   );
 }

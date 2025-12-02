@@ -585,6 +585,7 @@ type LancamentosTableProps = {
   onEdit?: (item: LancamentoItem) => void;
   onConfirmDelete?: (item: LancamentoItem) => void;
   onBulkDelete?: (items: LancamentoItem[]) => void;
+  onBulkEdit?: (items: LancamentoItem[]) => void;
   onViewDetails?: (item: LancamentoItem) => void;
   onToggleSettlement?: (item: LancamentoItem) => void;
   onAnticipate?: (item: LancamentoItem) => void;
@@ -604,6 +605,7 @@ export function LancamentosTable({
   onEdit,
   onConfirmDelete,
   onBulkDelete,
+  onBulkEdit,
   onViewDetails,
   onToggleSettlement,
   onAnticipate,
@@ -751,6 +753,19 @@ export function LancamentosTable({
             <RiDeleteBin5Line className="size-4" />
             Remover selecionados
           </Button>
+          {onBulkEdit && (
+            <Button
+              onClick={() => {
+                const selectedItems = selectedRows.map((row) => row.original);
+                onBulkEdit(selectedItems);
+              }}
+              variant="outline"
+              size="sm"
+            >
+              <RiPencilLine className="size-4" />
+              Editar selecionados
+            </Button>
+          )}
         </div>
       ) : null}
 
