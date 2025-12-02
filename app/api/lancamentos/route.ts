@@ -6,35 +6,14 @@ import { LANCAMENTO_TRANSACTION_TYPES } from "@/lib/lancamentos/constants";
 import { splitAmount } from "@/lib/utils/currency";
 import { addMonthsToDate, addMonthsToPeriod, parseLocalDateString } from "@/lib/utils/date";
 
-// Função auxiliar para autenticar o token
-async function authenticateRequest(request: Request) {
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { error: "Authorization header is missing or malformed", status: 401, user: null };
-  }
-
-  const token = authHeader.split(" ")[1];
-  if (!token) {
-    return { error: "API token is missing", status: 401, user: null };
-  }
-
-  const user = await db.query.user.findFirst({
-    where: eq(schema.user.apiToken, token),
-  });
-
-  if (!user) {
-    return { error: "Invalid API token", status: 403, user: null };
-  }
-
-  return { user, error: null, status: 200 };
-}
+import { authenticateRequest, handleAuthError } from "@/lib/api-auth";
 
 // GET /api/lancamentos - Retorna os lançamentos do usuário com filtros
 export async function GET(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);
     if (error || !user) {
-      return new NextResponse(JSON.stringify({ error: error || "User not found" }), { status, headers: { "Content-Type": "application/json" } });
+      return handleAuthError(error || "User not found", status);
     }
 
     const { searchParams } = new URL(request.url);
@@ -118,7 +97,7 @@ export async function POST(request: Request) {
     // 1. Autenticação
     const { user, error, status } = await authenticateRequest(request);
     if (error || !user) {
-      return new NextResponse(JSON.stringify({ error: error || "Usuário não encontrado" }), { status, headers: { "Content-Type": "application/json" } });
+      return handleAuthError(error || "Usuário não encontrado", status);
     }
 
     // 2. Validação do Corpo da Requisição
@@ -145,9 +124,9 @@ export async function POST(request: Request) {
         db.query.pagadores.findMany({ where: eq(schema.pagadores.userId, user.id), columns: { id: true } })
     ]);
 
-    const validContaIds = new Set(userContas.map(c => c.id));
-    const validCategoriaIds = new Set(userCategorias.map(c => c.id));
-    const validPagadorIds = new Set(userPagadores.map(p => p.id));
+    const validContaIds = new Set(userContas.map((c: { id: string }) => c.id));
+    const validCategoriaIds = new Set(userCategorias.map((c: { id: string }) => c.id));
+    const validPagadorIds = new Set(userPagadores.map((p: { id: string }) => p.id));
     
     // Busca o pagador padrão do usuário (se houver)
     const defaultPagadorId = userPagadores.length > 0 ? userPagadores[0].id : null;
@@ -262,7 +241,7 @@ export async function DELETE(request: Request) {
     // 1. Autenticação
     const { user, error, status } = await authenticateRequest(request);
     if (error || !user) {
-      return new NextResponse(JSON.stringify({ error: error || "Usuário não encontrado" }), { status, headers: { "Content-Type": "application/json" } });
+      return handleAuthError(error || "Usuário não encontrado", status);
     }
 
     // 2. Validação do Corpo da Requisição
@@ -288,7 +267,7 @@ export async function DELETE(request: Request) {
     // 4. Resposta
     return new NextResponse(JSON.stringify({
       message: `${deleted.length} lançamento(s) foram deletados com sucesso.`,
-      deletedIds: deleted.map(d => d.id),
+      deletedIds: deleted.map((d: { id: string }) => d.id),
     }), { status: 200, headers: { "Content-Type": "application/json" } });
 
   } catch (e: any) {
@@ -318,7 +297,7 @@ export async function PUT(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);
     if (error || !user) {
-      return new NextResponse(JSON.stringify({ error: error || "Usuário não encontrado" }), { status, headers: { "Content-Type": "application/json" } });
+      return handleAuthError(error || "Usuário não encontrado", status);
     }
 
     const body = await request.json();
@@ -332,7 +311,7 @@ export async function PUT(request: Request) {
     let updatedCount = 0;
     const updatedIds: string[] = [];
 
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: any) => {
       for (const update of updates) {
         const { id, ...fieldsToUpdate } = update;
 

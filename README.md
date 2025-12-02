@@ -734,9 +734,57 @@ opensheets/
 ├── app/                      # Next.js App Router
 │   ├── api/                  # API Routes
 │   │   ├── auth/            # Better Auth endpoints
-│   │   └── health/          # Health check
+│   │   ├── health/          # Health check
+│   │   ├── pagadores/       # API Pagadores
+│   │   ├── categorias/      # API Categorias
+│   │   ├── contas/          # API Contas
+│   │   └── cartoes/         # API Cartões
 │   ├── (dashboard)/         # Protected routes (com auth)
 │   └── layout.tsx           # Root layout
+
+---
+
+## 🔌 API Endpoints
+
+O Opensheets fornece endpoints para consulta de dados. Todas as requisições devem ser autenticadas.
+
+### Autenticação
+
+Envie o token no header `Authorization`:
+
+```http
+Authorization: Bearer <SEU_TOKEN_API>
+```
+
+### Endpoints Disponíveis
+
+#### 1. Pagadores
+Retorna a lista de pagadores cadastrados.
+
+- **URL:** `/api/pagadores`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Pagador`
+
+#### 2. Categorias
+Retorna a lista de categorias cadastradas.
+
+- **URL:** `/api/categorias`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Categoria`
+
+#### 3. Contas (Bancos)
+Retorna a lista de contas bancárias.
+
+- **URL:** `/api/contas`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Conta`
+
+#### 4. Cartões
+Retorna a lista de cartões de crédito.
+
+- **URL:** `/api/cartoes`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Cartao`
 │
 ├── components/              # React Components
 │   ├── ui/                  # shadcn/ui components
