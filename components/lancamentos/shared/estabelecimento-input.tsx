@@ -98,7 +98,7 @@ export function EstabelecimentoInput({
           <Command>
             <CommandList className="max-h-[300px] overflow-y-auto">
               <CommandEmpty className="p-6">
-                Nenhum estabelecimento encontrado.
+                Nenhuma descrição encontrada.
               </CommandEmpty>
               <CommandGroup className="p-1">
                 {filteredEstabelecimentos.map((item) => (

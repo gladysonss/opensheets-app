@@ -57,7 +57,7 @@ export function BasicFieldsSection({
 
       <div className="flex w-full flex-col gap-2 md:flex-row">
         <div className="w-1/2 space-y-1">
-          <Label htmlFor="name">Estabelecimento</Label>
+          <Label htmlFor="name">Descrição</Label>
           <EstabelecimentoInput
             id="name"
             value={formState.name}

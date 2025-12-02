@@ -182,7 +182,7 @@ export function MassAddDialog({
 
     if (invalidTransactions.length > 0) {
       toast.error(
-        "Preencha todos os campos obrigatórios das transações (data, estabelecimento e valor)"
+        "Preencha todos os campos obrigatórios das transações (data, descrição e valor)"
       );
       return;
     }
@@ -498,7 +498,7 @@ export function MassAddDialog({
                         htmlFor={`name-${transaction.id}`}
                         className="sr-only"
                       >
-                        Estabelecimento {index + 1}
+                        Descrição {index + 1}
                       </Label>
                       <EstabelecimentoInput
                         id={`name-${transaction.id}`}

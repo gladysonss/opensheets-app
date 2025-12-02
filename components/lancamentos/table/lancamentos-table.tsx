@@ -151,7 +151,7 @@ const buildColumns = ({
     },
     {
       accessorKey: "name",
-      header: "Estabelecimento",
+      header: "Descrição",
       cell: ({ row }) => {
         const {
           name,
