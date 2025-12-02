@@ -37,12 +37,12 @@ export function RecurringExpensesWidget({
           return (
             <li
               key={expense.id}
-              className="flex items-start gap-3 border-b border-dashed pb-2 last:border-b-0 last:pb-0"
+              className="flex items-center gap-3 border-b border-dashed pb-2 last:border-b-0 last:pb-0"
             >
               <EstabelecimentoLogo name={expense.name} size={38} />
 
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between">
                   <p className="truncate text-foreground text-sm font-medium">
                     {expense.name}
                   </p>
@@ -50,11 +50,11 @@ export function RecurringExpensesWidget({
                   <MoneyValues amount={expense.amount} />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="inline-flex items-center gap-1">
                     {expense.paymentMethod}
                   </span>
-                  -<span>{formatOccurrences(expense.recurrenceCount)}</span>
+                  <span>{formatOccurrences(expense.recurrenceCount)}</span>
                 </div>
               </div>
             </li>

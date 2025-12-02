@@ -54,12 +54,12 @@ export function PaymentMethodsWidget({ data }: PaymentMethodsWidgetProps) {
           return (
             <li
               key={method.paymentMethod}
-              className="flex items-center gap-3 border-b border-dashed pb-4 last:border-b-0 last:pb-0"
+              className="flex items-center gap-3 border-b border-dashed pb-3 last:border-b-0 last:pb-0"
             >
               <div className={ICON_WRAPPER_CLASS}>{icon}</div>
 
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between">
                   <p className="font-medium text-foreground text-sm">
                     {method.paymentMethod}
                   </p>
