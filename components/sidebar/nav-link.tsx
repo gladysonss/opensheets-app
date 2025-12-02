@@ -62,10 +62,7 @@ export function createSidebarNavData(pagadores: PagadorLike[]): SidebarNavData {
       key: pagador.canEdit ? pagador.id : `${pagador.id}-shared`,
       isShared: !pagador.canEdit,
       avatarUrl: pagador.avatarUrl,
-    }))
-    .sort((a, b) =>
-      a.title.localeCompare(b.title, "pt-BR", { sensitivity: "base" })
-    );
+    }));
 
   const pagadorItemsWithHistory: SidebarSubItem[] = pagadorItems;
 

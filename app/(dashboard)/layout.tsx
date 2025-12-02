@@ -17,6 +17,11 @@ export default async function DashboardLayout({
 }>) {
   const session = await getUserSession();
   const pagadoresList = await fetchPagadoresWithAccess(session.user.id);
+  pagadoresList.sort((a, b) => {
+    const nameA = a.name?.trim() || "Pagador sem nome";
+    const nameB = b.name?.trim() || "Pagador sem nome";
+    return nameA.localeCompare(nameB, "pt-BR", { sensitivity: "base" });
+  });
 
   // Encontrar o pagador admin do usuário
   const adminPagador = pagadoresList.find(
