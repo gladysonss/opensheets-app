@@ -30,7 +30,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DecimalInput } from "@/components/ui/decimal-input";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { createMaintenanceAction } from "@/app/(dashboard)/veiculos/actions";
+import { getTodayDateString } from "@/lib/utils/date";
 import type { Option } from "@/types/common";
 
 const maintenanceFormSchema = z.object({
@@ -49,6 +52,8 @@ const maintenanceFormSchema = z.object({
   nextMaintenanceDate: z.string().optional(),
   // Payment fields
   paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
+  condition: z.string().min(1, "Informe a condição"),
+  installmentCount: z.string().optional(),
   contaId: z.string().optional(),
   cartaoId: z.string().optional(),
   pagadorId: z.string().optional(),
@@ -77,12 +82,13 @@ export function MaintenanceFormDialog({
   defaultVehicleId,
 }: MaintenanceFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastOdometer, setLastOdometer] = useState(0);
 
   const form = useForm<MaintenanceFormValues>({
     resolver: zodResolver(maintenanceFormSchema),
     defaultValues: {
-      veiculoId: defaultVehicleId || "",
-      date: new Date().toISOString().split("T")[0],
+      veiculoId: vehicleOptions[0]?.value || defaultVehicleId || "",
+      date: getTodayDateString(),
       odometer: 0,
       type: "preventiva",
       serviceName: "",
@@ -94,13 +100,27 @@ export function MaintenanceFormDialog({
       workshop: "",
       nextMaintenanceKm: undefined,
       nextMaintenanceDate: "",
-      paymentMethod: "Dinheiro",
+      paymentMethod: "Cartão de crédito",
+      condition: "À vista",
+      installmentCount: "",
       contaId: accountOptions[0]?.value || "",
       cartaoId: "",
       pagadorId: pagadorOptions[0]?.value || "",
       note: "",
     },
   });
+
+  const selectedVehicleId = form.watch("veiculoId");
+  const paymentMethod = form.watch("paymentMethod");
+  const condition = form.watch("condition");
+
+  // Update lastOdometer when selected vehicle changes
+  useEffect(() => {
+    const selectedVehicle = vehicleOptions.find((v) => v.value === selectedVehicleId);
+    if (selectedVehicle) {
+      setLastOdometer(selectedVehicle.lastOdometer ?? 0);
+    }
+  }, [selectedVehicleId, vehicleOptions]);
 
   // Auto-calculate total cost
   useEffect(() => {
@@ -118,9 +138,10 @@ export function MaintenanceFormDialog({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
+      const firstVehicle = vehicleOptions[0];
       form.reset({
-        veiculoId: defaultVehicleId || "",
-        date: new Date().toISOString().split("T")[0],
+        veiculoId: firstVehicle?.value || defaultVehicleId || "",
+        date: getTodayDateString(),
         odometer: 0,
         type: "preventiva",
         serviceName: "",
@@ -132,19 +153,33 @@ export function MaintenanceFormDialog({
         workshop: "",
         nextMaintenanceKm: undefined,
         nextMaintenanceDate: "",
-        paymentMethod: "Dinheiro",
+        paymentMethod: "Cartão de crédito",
+        condition: "À vista",
+        installmentCount: "",
         contaId: accountOptions[0]?.value || "",
         cartaoId: "",
         pagadorId: pagadorOptions[0]?.value || "",
         note: "",
       });
+      if (firstVehicle?.lastOdometer) {
+        setLastOdometer(firstVehicle.lastOdometer);
+      }
     }
-  }, [open, defaultVehicleId, accountOptions, pagadorOptions, form]);
+  }, [open, defaultVehicleId, accountOptions, pagadorOptions, vehicleOptions, form]);
 
   const onSubmit = async (values: MaintenanceFormValues) => {
     setIsSubmitting(true);
     try {
-      const result = await createMaintenanceAction(values);
+      const payload = {
+        ...values,
+        installmentCount: values.installmentCount ? parseInt(values.installmentCount) : undefined,
+      };
+
+      // If odometer is 0 (empty) and we have a last odometer, use that
+      if (payload.odometer === 0 && lastOdometer > 0) {
+        payload.odometer = lastOdometer;
+      }
+      const result = await createMaintenanceAction(payload);
       if (result.success) {
         toast.success(result.message);
         onOpenChange(false);
@@ -161,13 +196,13 @@ export function MaintenanceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-xl p-6 sm:px-8">
         <DialogHeader>
           <DialogTitle>Nova Manutenção</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 -mx-6 max-h-[80vh] overflow-y-auto px-6 pb-1">
             {/* Vehicle Selection */}
             <FormField
               control={form.control}
@@ -180,7 +215,7 @@ export function MaintenanceFormDialog({
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione o veículo" />
                       </SelectTrigger>
                     </FormControl>
@@ -197,16 +232,19 @@ export function MaintenanceFormDialog({
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex w-full flex-col gap-2 md:flex-row">
               {/* Date */}
               <FormField
                 control={form.control}
                 name="date"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/2">
                     <FormLabel>Data *</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -218,13 +256,13 @@ export function MaintenanceFormDialog({
                 control={form.control}
                 name="odometer"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/2">
                     <FormLabel>Odômetro (km) *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder="0"
-                        {...field}
+                        placeholder={lastOdometer > 0 ? `Último: ${lastOdometer.toLocaleString('pt-BR')} km` : "0"}
+                        value={field.value === 0 ? "" : field.value}
                         onChange={(e) =>
                           field.onChange(Number(e.target.value))
                         }
@@ -236,60 +274,15 @@ export function MaintenanceFormDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Type */}
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="preventiva">Preventiva</SelectItem>
-                        <SelectItem value="corretiva">Corretiva</SelectItem>
-                        <SelectItem value="revisao">Revisão</SelectItem>
-                        <SelectItem value="outros">Outros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Service Name */}
-              <FormField
-                control={form.control}
-                name="serviceName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Serviço *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: Troca de óleo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Workshop */}
+            {/* Service Name */}
             <FormField
               control={form.control}
-              name="workshop"
+              name="serviceName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Oficina</FormLabel>
+                  <FormLabel>Serviço *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome da oficina" {...field} />
+                    <Input placeholder="Ex: Troca de óleo" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -332,19 +325,19 @@ export function MaintenanceFormDialog({
               )}
             />
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="flex w-full flex-col gap-2 md:flex-row">
               {/* Labor Cost */}
               <FormField
                 control={form.control}
                 name="laborCost"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/3">
                     <FormLabel>Mão de Obra</FormLabel>
                     <FormControl>
-                      <DecimalInput
-                        value={field.value || 0}
+                      <CurrencyInput
+                        value={String(field.value || 0)}
                         onValueChange={field.onChange}
-                        placeholder="0,00"
+                        placeholder="R$ 0,00"
                       />
                     </FormControl>
                     <FormMessage />
@@ -357,13 +350,13 @@ export function MaintenanceFormDialog({
                 control={form.control}
                 name="partsCost"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/3">
                     <FormLabel>Peças</FormLabel>
                     <FormControl>
-                      <DecimalInput
-                        value={field.value || 0}
+                      <CurrencyInput
+                        value={String(field.value || 0)}
                         onValueChange={field.onChange}
-                        placeholder="0,00"
+                        placeholder="R$ 0,00"
                       />
                     </FormControl>
                     <FormMessage />
@@ -376,13 +369,14 @@ export function MaintenanceFormDialog({
                 control={form.control}
                 name="totalCost"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/3">
                     <FormLabel>Total *</FormLabel>
                     <FormControl>
-                      <DecimalInput
-                        value={field.value || 0}
+                      <CurrencyInput
+                        value={String(field.value || 0)}
                         onValueChange={field.onChange}
-                        placeholder="0,00"
+                        placeholder="R$ 0,00"
+                        disabled
                       />
                     </FormControl>
                     <FormMessage />
@@ -393,18 +387,18 @@ export function MaintenanceFormDialog({
 
             <div className="border-t pt-4">
               <h3 className="font-medium mb-4">Próxima Manutenção</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex w-full flex-col gap-2 md:flex-row">
                 {/* Next Maintenance Km */}
                 <FormField
                   control={form.control}
                   name="nextMaintenanceKm"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full md:w-1/2">
                       <FormLabel>Km</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="0"
+                          placeholder={lastOdometer > 0 ? `Último: ${lastOdometer.toLocaleString('pt-BR')} km` : "0"}
                           {...field}
                           onChange={(e) =>
                             field.onChange(
@@ -423,10 +417,13 @@ export function MaintenanceFormDialog({
                   control={form.control}
                   name="nextMaintenanceDate"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full md:w-1/2">
                       <FormLabel>Data</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker
+                          value={field.value ?? ""}
+                          onChange={field.onChange}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -438,60 +435,89 @@ export function MaintenanceFormDialog({
             <div className="border-t pt-4">
               <h3 className="font-medium mb-4">Pagamento</h3>
               <div className="space-y-4">
-                {/* Payment Method */}
-                <FormField
-                  control={form.control}
-                  name="paymentMethod"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Forma de Pagamento *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                          <SelectItem value="Pix">Pix</SelectItem>
-                          <SelectItem value="Débito">Débito</SelectItem>
-                          <SelectItem value="Crédito">Crédito</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
+                <div className="flex w-full flex-col gap-2 sm:flex-row">
+                  <FormField
+                    control={form.control}
+                    name="condition"
+                    render={({ field }) => (
+                      <FormItem className={condition === "Parcelado" ? "w-full sm:w-1/2" : "w-full"}>
+                        <FormLabel>Condição *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="À vista">À vista</SelectItem>
+                            <SelectItem value="Parcelado">Parcelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {condition === "Parcelado" && (
+                    <FormField
+                      control={form.control}
+                      name="installmentCount"
+                      render={({ field }) => (
+                        <FormItem className="w-full sm:w-1/2">
+                          <FormLabel>Parcelas *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[...Array(24)].map((_, i) => (
+                                <SelectItem key={i + 2} value={String(i + 2)}>
+                                  {i + 2}x
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
+                </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Account */}
+                <div className="flex w-full flex-col gap-2 sm:flex-row">
+                  {/* Payment Method */}
                   <FormField
                     control={form.control}
-                    name="contaId"
+                    name="paymentMethod"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Conta</FormLabel>
+                      <FormItem className="w-full sm:w-1/2">
+                        <FormLabel>Forma de Pagamento *</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Selecione" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {accountOptions.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="Cartão de crédito">
+                              Cartão de crédito
+                            </SelectItem>
+                            <SelectItem value="Cartão de débito">
+                              Débito
+                            </SelectItem>
+                            <SelectItem value="Pix">Pix</SelectItem>
+                            <SelectItem value="Dinheiro">Dinheiro</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -499,37 +525,69 @@ export function MaintenanceFormDialog({
                     )}
                   />
 
-                  {/* Card */}
-                  <FormField
-                    control={form.control}
-                    name="cartaoId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cartão</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {cardOptions.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {paymentMethod === "Cartão de crédito" ? (
+                    <FormField
+                      control={form.control}
+                      name="cartaoId"
+                      render={({ field }) => (
+                        <FormItem className="w-full sm:w-1/2">
+                          <FormLabel>Cartão</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {cardOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="contaId"
+                      render={({ field }) => (
+                        <FormItem className="w-full sm:w-1/2">
+                          <FormLabel>Conta / Banco</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {accountOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
 
                 {/* Payer */}
@@ -537,14 +595,14 @@ export function MaintenanceFormDialog({
                   control={form.control}
                   name="pagadorId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full">
                       <FormLabel>Pagador</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                         </FormControl>
@@ -566,7 +624,7 @@ export function MaintenanceFormDialog({
                   control={form.control}
                   name="note"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full">
                       <FormLabel>Observações</FormLabel>
                       <FormControl>
                         <Textarea placeholder="Observações adicionais" {...field} />

@@ -8,8 +8,9 @@ import { getUser } from "@/lib/auth/server";
 import { uuidSchema } from "@/lib/schemas/common";
 import { and, eq, desc } from "drizzle-orm";
 import { z } from "zod";
-import { parseLocalDateString } from "@/lib/utils/date";
-import { formatDecimalForDbRequired } from "@/lib/utils/currency";
+import { parseLocalDateString, addMonthsToDate, addMonthsToPeriod } from "@/lib/utils/date";
+import { formatDecimalForDbRequired, splitAmount, centsToDecimalString } from "@/lib/utils/currency";
+import { randomUUID } from "crypto";
 
 // ==========================================
 // Schemas - Veículos
@@ -62,6 +63,8 @@ const refuelingSchema = z.object({
   isFullTank: z.boolean().default(true),
   // Fields for the expense (lancamento)
   paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
+  condition: z.string().min(1, "Informe a condição"),
+  installmentCount: z.number().optional(),
   contaId: uuidSchema("Conta").optional().nullable(),
   cartaoId: uuidSchema("Cartão").optional().nullable(),
   pagadorId: uuidSchema("Pagador").optional().nullable(),
@@ -184,31 +187,82 @@ export async function createRefuelingAction(
       purchaseDate.getMonth() + 1
     ).padStart(2, "0")}`;
 
+    const isParcelado = data.condition === "Parcelado";
+    const installmentTotal = isParcelado ? (data.installmentCount ?? 1) : 1;
+    const seriesId = isParcelado ? randomUUID() : null;
+    const totalCents = Math.round(data.totalCost * 100);
+    const amounts = isParcelado
+      ? splitAmount(totalCents, installmentTotal)
+      : [totalCents];
+
     await db.transaction(async (tx) => {
-      const [lancamento] = await tx
-        .insert(lancamentos)
-        .values({
-          userId: user.id,
-          name: `Abastecimento - ${vehicle.name}`,
-          amount: formatDecimalForDbRequired(data.totalCost * -1), // Expense is negative
-          transactionType: "Despesa",
-          condition: "À vista", // Assuming fuel is usually paid at once
-          paymentMethod: data.paymentMethod,
-          purchaseDate: purchaseDate,
-          period: period,
-          contaId: data.contaId,
-          cartaoId: data.cartaoId,
-          note: data.note,
-          veiculoId: data.veiculoId,
-          pagadorId: data.pagadorId,
-          isSettled: true, // Assuming paid immediately
-        })
-        .returning({ id: lancamentos.id });
+      let firstLancamentoId: string | null = null;
+
+      for (let i = 0; i < installmentTotal; i++) {
+        const currentAmountCents = amounts[i];
+        const currentAmount = centsToDecimalString(currentAmountCents * -1); // Expense is negative
+
+        const currentPurchaseDate = isParcelado
+          ? addMonthsToDate(purchaseDate, i)
+          : purchaseDate;
+        const currentPeriod = isParcelado
+          ? addMonthsToPeriod(period, i)
+          : period;
+
+        // Determine if settled
+        // Credit card is never settled immediately (it goes to invoice)
+        // Parcelado installments (after first) are not settled
+        // First installment of Parcelado (if not credit card) might be settled?
+        // For simplicity:
+        // - Credit Card: always false
+        // - Others:
+        //   - Not Parcelado: true (paid now)
+        //   - Parcelado: First true, others false (unless credit card, then all false)
+        let isSettled = true;
+        if (data.paymentMethod === "Cartão de crédito") {
+          isSettled = false;
+        } else if (isParcelado && i > 0) {
+          isSettled = false;
+        }
+
+        const [lancamento] = await tx
+          .insert(lancamentos)
+          .values({
+            userId: user.id,
+            name: `Abastecimento - ${vehicle.name}${
+              isParcelado ? ` (${i + 1}/${installmentTotal})` : ""
+            }`,
+            amount: currentAmount,
+            transactionType: "Despesa",
+            condition: data.condition,
+            paymentMethod: data.paymentMethod,
+            purchaseDate: currentPurchaseDate,
+            period: currentPeriod,
+            contaId: data.contaId,
+            cartaoId: data.cartaoId,
+            note: data.note,
+            veiculoId: data.veiculoId,
+            pagadorId: data.pagadorId,
+            isSettled: isSettled,
+            installmentCount: isParcelado ? installmentTotal : null,
+            currentInstallment: isParcelado ? i + 1 : null,
+            seriesId: seriesId,
+          })
+          .returning({ id: lancamentos.id });
+
+        if (i === 0) {
+          firstLancamentoId = lancamento.id;
+        }
+      }
+
+      if (!firstLancamentoId) {
+        throw new Error("Falha ao criar lançamento de abastecimento.");
+      }
 
       await tx.insert(abastecimentos).values({
         userId: user.id,
         veiculoId: data.veiculoId,
-        lancamentoId: lancamento.id,
+        lancamentoId: firstLancamentoId,
         date: purchaseDate,
         odometer: data.odometer,
         liters: formatDecimalForDbRequired(data.liters),
@@ -297,6 +351,8 @@ const maintenanceSchema = z.object({
   nextMaintenanceDate: z.string().refine((val) => !val || !isNaN(Date.parse(val)), "Data inválida").optional().nullable(),
   // Fields for the expense (lancamento)
   paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
+  condition: z.string().min(1, "Informe a condição"),
+  installmentCount: z.number().optional(),
   contaId: uuidSchema("Conta").optional().nullable(),
   cartaoId: uuidSchema("Cartão").optional().nullable(),
   pagadorId: uuidSchema("Pagador").optional().nullable(),
@@ -340,42 +396,91 @@ export async function createMaintenanceAction(
       maintenanceDate.getMonth() + 1
     ).padStart(2, "0")}`;
 
+    const isParcelado = data.condition === "Parcelado";
+    const installmentTotal = isParcelado ? (data.installmentCount ?? 1) : 1;
+    const seriesId = isParcelado ? randomUUID() : null;
+    const totalCents = Math.round(data.totalCost * 100);
+    const amounts = isParcelado
+      ? splitAmount(totalCents, installmentTotal)
+      : [totalCents];
+
     await db.transaction(async (tx) => {
-      const [lancamento] = await tx
-        .insert(lancamentos)
-        .values({
-          userId: user.id,
-          name: `Manutenção - ${vehicle.name} - ${data.serviceName}`,
-          amount: formatDecimalForDbRequired(data.totalCost * -1), // Expense is negative
-          transactionType: "Despesa",
-          condition: "À vista",
-          paymentMethod: data.paymentMethod,
-          purchaseDate: maintenanceDate,
-          period: period,
-          contaId: data.contaId,
-          cartaoId: data.cartaoId,
-          pagadorId: data.pagadorId,
-          note: data.note,
-          isSettled: true,
-        })
-        .returning({ id: lancamentos.id });
+      let firstLancamentoId: string | null = null;
+
+      for (let i = 0; i < installmentTotal; i++) {
+        const currentAmountCents = amounts[i];
+        const currentAmount = centsToDecimalString(currentAmountCents * -1); // Expense is negative
+
+        const currentPurchaseDate = isParcelado
+          ? addMonthsToDate(maintenanceDate, i)
+          : maintenanceDate;
+        const currentPeriod = isParcelado
+          ? addMonthsToPeriod(period, i)
+          : period;
+
+        let isSettled = true;
+        if (data.paymentMethod === "Cartão de crédito") {
+          isSettled = false;
+        } else if (isParcelado && i > 0) {
+          isSettled = false;
+        }
+
+        const [lancamento] = await tx
+          .insert(lancamentos)
+          .values({
+            userId: user.id,
+            name: `Manutenção - ${vehicle.name} - ${data.serviceName}${
+              isParcelado ? ` (${i + 1}/${installmentTotal})` : ""
+            }`,
+            amount: currentAmount,
+            transactionType: "Despesa",
+            condition: data.condition,
+            paymentMethod: data.paymentMethod,
+            purchaseDate: currentPurchaseDate,
+            period: currentPeriod,
+            contaId: data.contaId,
+            cartaoId: data.cartaoId,
+            pagadorId: data.pagadorId,
+            note: data.note,
+            veiculoId: data.veiculoId,
+            isSettled: isSettled,
+            installmentCount: isParcelado ? installmentTotal : null,
+            currentInstallment: isParcelado ? i + 1 : null,
+            seriesId: seriesId,
+          })
+          .returning({ id: lancamentos.id });
+
+        if (i === 0) {
+          firstLancamentoId = lancamento.id;
+        }
+      }
+
+      if (!firstLancamentoId) {
+        throw new Error("Falha ao criar lançamento de manutenção.");
+      }
 
       await tx.insert(manutencoes).values({
         userId: user.id,
         veiculoId: data.veiculoId,
-        lancamentoId: lancamento.id,
+        lancamentoId: firstLancamentoId,
         date: maintenanceDate,
         odometer: data.odometer,
         type: data.type,
         serviceName: data.serviceName,
         description: data.description,
         parts: data.parts,
-        laborCost: data.laborCost ? formatDecimalForDbRequired(data.laborCost) : null,
-        partsCost: data.partsCost ? formatDecimalForDbRequired(data.partsCost) : null,
+        laborCost: data.laborCost
+          ? formatDecimalForDbRequired(data.laborCost)
+          : null,
+        partsCost: data.partsCost
+          ? formatDecimalForDbRequired(data.partsCost)
+          : null,
         totalCost: formatDecimalForDbRequired(data.totalCost),
         workshop: data.workshop,
         nextMaintenanceKm: data.nextMaintenanceKm,
-        nextMaintenanceDate: data.nextMaintenanceDate ? parseLocalDateString(data.nextMaintenanceDate) : null,
+        nextMaintenanceDate: data.nextMaintenanceDate
+          ? parseLocalDateString(data.nextMaintenanceDate)
+          : null,
       });
     });
 
@@ -452,6 +557,7 @@ export async function updateMaintenanceAction(
             cartaoId: data.cartaoId,
             pagadorId: data.pagadorId,
             note: data.note,
+            veiculoId: data.veiculoId,
           })
           .where(
             and(

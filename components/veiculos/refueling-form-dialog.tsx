@@ -32,7 +32,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useTransition, useState, useEffect } from "react";
+import { useTransition, useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { createRefuelingAction } from "@/app/(dashboard)/veiculos/actions";
 import { Plus, Fuel } from "lucide-react";
@@ -43,18 +43,18 @@ import { getTodayDateString } from "@/lib/utils/date";
 
 const refuelingSchema = z.object({
   veiculoId: uuidSchema("Veículo"),
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), "Data inválida"),
+  date: z.string().min(1, "Informe a data"),
   odometer: z.coerce.number().min(0, "Odômetro inválido"),
   liters: z.coerce.number().positive("Litros deve ser maior que zero"),
-  pricePerLiter: z.coerce
-    .number()
-    .positive("Preço por litro deve ser maior que zero"),
-  totalCost: z.coerce.number().positive("Custo total deve ser maior que zero"),
-  fuelType: z.string().min(1, "Informe o tipo de combustível"),
+  pricePerLiter: z.coerce.number().min(0, "Preço inválido"),
+  totalCost: z.coerce.number().min(0, "Total inválido"),
+  fuelType: z.string().min(1, "Selecione o combustível"),
   isFullTank: z.boolean().default(true),
-  paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
-  contaId: uuidSchema("Conta").optional().nullable(),
-  cartaoId: uuidSchema("Cartão").optional().nullable(),
+  paymentMethod: z.string().min(1, "Selecione a forma de pagamento"),
+  condition: z.string().min(1, "Selecione a condição"),
+  installmentCount: z.string().optional(),
+  contaId: z.string().optional(),
+  cartaoId: z.string().optional(),
   pagadorId: uuidSchema("Pagador").optional().nullable(),
   note: z.string().optional().nullable(),
 });
@@ -90,8 +90,10 @@ export function RefuelingFormDialog({
   trigger,
 }: RefuelingFormDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const totalInputMode = useRef<"update_price" | "update_liters" | null>(null);
   const [isPending, startTransition] = useTransition();
   const [currentLastOdometer, setCurrentLastOdometer] = useState(lastOdometer);
+
 
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = setControlledOpen ?? setUncontrolledOpen;
@@ -101,19 +103,24 @@ export function RefuelingFormDialog({
     defaultValues: {
       veiculoId: veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
       date: getTodayDateString(),
-      odometer: 0, // Start as 0 (empty in UI)
+      odometer: 0,
       liters: 0,
       pricePerLiter: 0,
       totalCost: 0,
       fuelType: "Gasolina",
       isFullTank: true,
       paymentMethod: "Cartão de crédito",
-      pagadorId: pagadorOptions.length > 0 ? pagadorOptions[0].value : "",
+      condition: "À vista",
+      installmentCount: "",
+      contaId: contaOptions[0]?.value || "",
+      cartaoId: "",
+      pagadorId: pagadorOptions[0]?.value || "",
       note: "",
     },
   });
 
   const paymentMethod = form.watch("paymentMethod");
+  const condition = form.watch("condition");
   const selectedVehicleId = form.watch("veiculoId");
 
   // Update currentLastOdometer when selected vehicle changes
@@ -125,8 +132,12 @@ export function RefuelingFormDialog({
   }, [selectedVehicleId, vehicleOptions]);
 
   function onSubmit(values: RefuelingFormValues) {
+    const payload = {
+      ...values,
+      installmentCount: values.installmentCount ? parseInt(values.installmentCount) : undefined,
+    };
+    
     // If odometer is 0 (empty) and we have a last odometer, use that
-    const payload = { ...values };
     if (payload.odometer === 0 && lastOdometer > 0) {
       payload.odometer = lastOdometer;
     }
@@ -140,7 +151,7 @@ export function RefuelingFormDialog({
           setOpen(false);
           form.reset({
             veiculoId: veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
-            date: new Date().toISOString().split("T")[0],
+            date: getTodayDateString(),
             odometer: 0, 
             liters: 0,
             pricePerLiter: values.pricePerLiter,
@@ -148,6 +159,8 @@ export function RefuelingFormDialog({
             fuelType: values.fuelType,
             isFullTank: true,
             paymentMethod: values.paymentMethod,
+            condition: "À vista",
+            installmentCount: "",
             contaId: values.contaId,
             cartaoId: values.cartaoId,
             pagadorId: values.pagadorId,
@@ -165,7 +178,7 @@ export function RefuelingFormDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-xl p-6 sm:px-8">
         <DialogHeader>
           <DialogTitle>Novo Abastecimento</DialogTitle>
           <DialogDescription>
@@ -173,7 +186,7 @@ export function RefuelingFormDialog({
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 -mx-6 max-h-[80vh] overflow-y-auto px-6 pb-1">
             {!veiculoId && vehicleOptions.length > 0 && (
               <FormField
                 control={form.control}
@@ -186,7 +199,7 @@ export function RefuelingFormDialog({
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione o veículo" />
                         </SelectTrigger>
                       </FormControl>
@@ -203,12 +216,12 @@ export function RefuelingFormDialog({
                 )}
               />
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex w-full flex-col gap-2 md:flex-row">
               <FormField
                 control={form.control}
                 name="date"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/2">
                     <FormLabel>Data</FormLabel>
                     <FormControl>
                       <DatePicker
@@ -224,7 +237,7 @@ export function RefuelingFormDialog({
                 control={form.control}
                 name="odometer"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/2">
                     <FormLabel>Odômetro (Km)</FormLabel>
                     <FormControl>
                       <Input
@@ -241,12 +254,12 @@ export function RefuelingFormDialog({
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="flex w-full flex-col gap-2 md:flex-row">
               <FormField
                 control={form.control}
                 name="liters"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/3">
                     <FormLabel>Litros</FormLabel>
                     <FormControl>
                       <DecimalInput
@@ -255,10 +268,17 @@ export function RefuelingFormDialog({
                           const numVal = Number(val);
                           field.onChange(numVal);
                           const price = form.getValues("pricePerLiter");
+                          const total = form.getValues("totalCost");
+                          
                           if (price > 0) {
                             form.setValue(
                               "totalCost",
                               Number((numVal * price).toFixed(2))
+                            );
+                          } else if (total > 0 && numVal > 0) {
+                            form.setValue(
+                              "pricePerLiter",
+                              Number((total / numVal).toFixed(3))
                             );
                           }
                         }}
@@ -272,7 +292,7 @@ export function RefuelingFormDialog({
                 control={form.control}
                 name="pricePerLiter"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/3">
                     <FormLabel>Preço/Litro</FormLabel>
                     <FormControl>
                       <CurrencyInput
@@ -281,10 +301,17 @@ export function RefuelingFormDialog({
                           const numVal = Number(val);
                           field.onChange(numVal);
                           const liters = form.getValues("liters");
+                          const total = form.getValues("totalCost");
+
                           if (liters > 0) {
                             form.setValue(
                               "totalCost",
                               Number((liters * numVal).toFixed(2))
+                            );
+                          } else if (total > 0 && numVal > 0) {
+                            form.setValue(
+                              "liters",
+                              Number((total / numVal).toFixed(3))
                             );
                           }
                         }}
@@ -299,12 +326,36 @@ export function RefuelingFormDialog({
                 control={form.control}
                 name="totalCost"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/3">
                     <FormLabel>Total (R$)</FormLabel>
                     <FormControl>
                       <CurrencyInput
                         value={String(field.value)}
-                        onValueChange={(val) => field.onChange(Number(val))}
+                        onFocus={() => {
+                          const price = form.getValues("pricePerLiter");
+                          const liters = form.getValues("liters");
+                          if (liters > 0 && price === 0) {
+                            totalInputMode.current = "update_price";
+                          } else {
+                            totalInputMode.current = "update_liters";
+                          }
+                        }}
+                        onValueChange={(val) => {
+                          const numVal = Number(val);
+                          field.onChange(numVal);
+                          
+                          if (totalInputMode.current === "update_price") {
+                             const liters = form.getValues("liters");
+                             if (liters > 0) {
+                               form.setValue("pricePerLiter", Number((numVal / liters).toFixed(3)));
+                             }
+                          } else {
+                             const price = form.getValues("pricePerLiter");
+                             if (price > 0) {
+                               form.setValue("liters", Number((numVal / price).toFixed(3)));
+                             }
+                          }
+                        }}
                         placeholder="R$ 0,00"
                       />
                     </FormControl>
@@ -314,19 +365,19 @@ export function RefuelingFormDialog({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex w-full flex-col gap-2 md:flex-row">
               <FormField
                 control={form.control}
                 name="fuelType"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full md:w-1/2">
                     <FormLabel>Combustível</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
@@ -346,34 +397,95 @@ export function RefuelingFormDialog({
                 control={form.control}
                 name="isFullTank"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 mt-8">
+                  <FormItem className="w-full md:w-1/2">
+                    <FormLabel>Opções</FormLabel>
                     <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
+                      <div className="flex h-9 w-full items-center space-x-2 rounded-md border border-input bg-transparent px-3 py-1 shadow-sm">
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                        <span className="text-sm font-medium leading-none">
+                          Tanque Cheio?
+                        </span>
+                      </div>
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Tanque Cheio?</FormLabel>
-                    </div>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="flex w-full flex-col gap-2 sm:flex-row">
+              <FormField
+                control={form.control}
+                name="condition"
+                render={({ field }) => (
+                  <FormItem className={condition === "Parcelado" ? "w-full sm:w-1/2" : "w-full"}>
+                    <FormLabel>Condição *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="À vista">À vista</SelectItem>
+                        <SelectItem value="Parcelado">Parcelado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {condition === "Parcelado" && (
+                <FormField
+                  control={form.control}
+                  name="installmentCount"
+                  render={({ field }) => (
+                    <FormItem className="w-full sm:w-1/2">
+                      <FormLabel>Parcelas *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {[...Array(24)].map((_, i) => (
+                            <SelectItem key={i + 2} value={String(i + 2)}>
+                              {i + 2}x
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <div className="flex w-full flex-col gap-2 sm:flex-row">
               <FormField
                 control={form.control}
                 name="paymentMethod"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="w-full sm:w-1/2">
                     <FormLabel>Forma de Pagamento</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                       </FormControl>
@@ -393,19 +505,19 @@ export function RefuelingFormDialog({
                 )}
               />
 
-              {paymentMethod === "Cartão de crédito" && (
+              {paymentMethod === "Cartão de crédito" ? (
                 <FormField
                   control={form.control}
                   name="cartaoId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="w-full sm:w-1/2">
                       <FormLabel>Cartão</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value ?? undefined}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Selecione o cartão" />
                           </SelectTrigger>
                         </FormControl>
@@ -421,21 +533,19 @@ export function RefuelingFormDialog({
                     </FormItem>
                   )}
                 />
-              )}
-
-              {paymentMethod === "Cartão de débito" && (
+              ) : (
                 <FormField
                   control={form.control}
                   name="contaId"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Conta</FormLabel>
+                    <FormItem className="w-full sm:w-1/2">
+                      <FormLabel>Conta / Banco</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value ?? undefined}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Selecione a conta" />
                           </SelectTrigger>
                         </FormControl>
@@ -458,14 +568,14 @@ export function RefuelingFormDialog({
               control={form.control}
               name="pagadorId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="w-full">
                   <FormLabel>Pagador</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value ?? undefined}
                   >
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Selecione o pagador" />
                       </SelectTrigger>
                     </FormControl>
