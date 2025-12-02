@@ -4,7 +4,7 @@ import { and, eq, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { LANCAMENTO_TRANSACTION_TYPES } from "@/lib/lancamentos/constants";
 import { splitAmount } from "@/lib/utils/currency";
-import { addMonthsToDate, addMonthsToPeriod } from "@/lib/utils/date";
+import { addMonthsToDate, addMonthsToPeriod, parseLocalDateString } from "@/lib/utils/date";
 
 // Função auxiliar para autenticar o token
 async function authenticateRequest(request: Request) {
@@ -104,7 +104,7 @@ const lancamentoInBulkSchema = z.object({
   contaId: z.string().uuid("ID de conta inválido.").optional().nullable(),
   categoriaId: z.string().uuid("ID de categoria inválido.").optional().nullable(),
   condition: z.string().optional().default('À vista'),
-  paymentMethod: z.string().optional().default('Dinheiro'),
+  paymentMethod: z.string().optional().default('Cartão de crédito'),
   note: z.string().optional().nullable(),
   installmentCount: z.number().int().min(1).optional(),
 });
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
             return new NextResponse(JSON.stringify({ error: `Pagador inválido ou não pertence ao usuário: ${transaction.pagadorId}` }), { status: 400 });
         }
 
-        const purchaseDateObj = new Date(transaction.purchaseDate);
+        const purchaseDateObj = parseLocalDateString(transaction.purchaseDate);
         const year = purchaseDateObj.getFullYear();
         const month = String(purchaseDateObj.getMonth() + 1).padStart(2, '0');
         const initialPeriod = `${year}-${month}`;
