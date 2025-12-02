@@ -802,6 +802,53 @@ opensheets/
 
 ---
 
+## 📚 API Reference
+
+O Opensheets possui uma API REST para integração com outros sistemas.
+
+### Autenticação
+
+Todas as requisições devem incluir o token de API do usuário no header `Authorization`.
+
+```http
+Authorization: Bearer SEU_TOKEN_AQUI
+```
+
+### Lançamentos (`/api/lancamentos`)
+
+#### Criar Lançamento (POST)
+
+Cria um ou mais lançamentos. Suporta parcelamento automático.
+
+**Endpoint:** `POST /api/lancamentos`
+**Content-Type:** `application/json`
+
+**Corpo da Requisição:**
+Pode ser um **objeto único** ou um **array de objetos**.
+
+```json
+{
+  "name": "Compra Exemplo",
+  "amount": 100.00,
+  "purchaseDate": "2025-12-01", // YYYY-MM-DD
+  "transactionType": "Despesa", // "Despesa" ou "Receita"
+  "condition": "Parcelado", // "À vista" ou "Parcelado"
+  "installmentCount": 3, // Opcional, obrigatório se parcelado
+  "contaId": "uuid-da-conta",
+  "categoriaId": "uuid-da-categoria",
+  "pagadorId": "uuid-do-pagador", // Opcional
+  "paymentMethod": "Cartão de crédito", // Opcional
+  "note": "Observação opcional"
+}
+```
+
+**Detalhes Importantes:**
+- **Parcelamento:** Se `condition` for "Parcelado" e `installmentCount` > 1, o sistema dividirá o `amount` (valor total) pelo número de parcelas e criará registros mensais automaticamente.
+- **Validação:** IDs de conta, categoria e pagador são validados para garantir que pertencem ao usuário autenticado.
+- **Data:** A `purchaseDate` é respeitada localmente (fuso horário) para evitar deslocamentos de dia/mês.
+
+---
+
 ## 🤝 Contribuindo
 
 Contribuições são muito bem-vindas!
