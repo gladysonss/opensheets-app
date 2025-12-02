@@ -172,6 +172,29 @@ export function addMonthsToDate(value: Date, offset: number): Date {
   return result;
 }
 
+/**
+ * Adds months to a period string (YYYY-MM)
+ * @param period - Period string in YYYY-MM format
+ * @param offset - Number of months to add
+ * @returns New period string
+ */
+export function addMonthsToPeriod(period: string, offset: number): string {
+  const [yearStr, monthStr] = period.split("-");
+  const baseYear = Number(yearStr);
+  const baseMonth = Number(monthStr);
+
+  if (!baseYear || !baseMonth) {
+    throw new Error("Período inválido.");
+  }
+
+  const date = new Date(baseYear, baseMonth - 1, 1);
+  date.setMonth(date.getMonth() + offset);
+
+  const nextYear = date.getFullYear();
+  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
+  return `${nextYear}-${nextMonth}`;
+}
+
 // ============================================================================
 // DATE FORMATTING
 // ============================================================================

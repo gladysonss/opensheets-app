@@ -21,11 +21,13 @@ import {
   sendPagadorAutoEmails,
 } from "@/lib/pagadores/notifications";
 import { noteSchema, uuidSchema } from "@/lib/schemas/common";
-import { formatDecimalForDbRequired } from "@/lib/utils/currency";
+import { formatDecimalForDbRequired, splitAmount } from "@/lib/utils/currency";
 import {
   getTodayDate,
   getTodayDateString,
   parseLocalDateString,
+  addMonthsToDate,
+  addMonthsToPeriod,
 } from "@/lib/utils/date";
 import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
@@ -234,53 +236,7 @@ const centsToDecimalString = (value: number) => {
   return Object.is(decimal, -0) ? "0.00" : formatted;
 };
 
-const splitAmount = (totalCents: number, parts: number) => {
-  if (parts <= 0) {
-    return [];
-  }
 
-  const base = Math.trunc(totalCents / parts);
-  const remainder = totalCents % parts;
-
-  return Array.from(
-    { length: parts },
-    (_, index) => base + (index < remainder ? 1 : 0)
-  );
-};
-
-const addMonthsToPeriod = (period: string, offset: number) => {
-  const [yearStr, monthStr] = period.split("-");
-  const baseYear = Number(yearStr);
-  const baseMonth = Number(monthStr);
-
-  if (!baseYear || !baseMonth) {
-    throw new Error("Período inválido.");
-  }
-
-  const date = new Date(baseYear, baseMonth - 1, 1);
-  date.setMonth(date.getMonth() + offset);
-
-  const nextYear = date.getFullYear();
-  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
-  return `${nextYear}-${nextMonth}`;
-};
-
-const addMonthsToDate = (value: Date, offset: number) => {
-  const result = new Date(value);
-  const originalDay = result.getDate();
-
-  result.setDate(1);
-  result.setMonth(result.getMonth() + offset);
-
-  const lastDay = new Date(
-    result.getFullYear(),
-    result.getMonth() + 1,
-    0
-  ).getDate();
-
-  result.setDate(Math.min(originalDay, lastDay));
-  return result;
-};
 
 type Share = {
   pagadorId: string | null;

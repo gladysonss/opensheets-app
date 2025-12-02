@@ -1,9 +1,10 @@
-
 import { NextResponse } from "next/server";
 import { db, schema } from "@/lib/db";
 import { and, eq, gte, lte, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { LANCAMENTO_TRANSACTION_TYPES } from "@/lib/lancamentos/constants";
+import { splitAmount } from "@/lib/utils/currency";
+import { addMonthsToDate, addMonthsToPeriod } from "@/lib/utils/date";
 
 // Função auxiliar para autenticar o token
 async function authenticateRequest(request: Request) {
@@ -67,7 +68,7 @@ export async function GET(request: Request) {
             where: and(...conditions),
             limit,
             offset,
-            orderBy: (lancamentos, { desc }) => [desc(lancamentos.purchaseDate)],
+            orderBy: (lancamentos: any, { desc }: any) => [desc(lancamentos.purchaseDate)],
         }),
         db.select({ count: schema.lancamentos.id }).from(schema.lancamentos).where(and(...conditions))
     ]);
@@ -93,18 +94,19 @@ export async function GET(request: Request) {
 
 // Schema for a single lancamento in a bulk creation request
 const lancamentoInBulkSchema = z.object({
-  name: z.string({ required_error: "O campo 'name' é obrigatório." }).min(1, "O campo 'name' não pode ser vazio."),
-  amount: z.number({ required_error: "O campo 'amount' é obrigatório." }).positive("O valor deve ser positivo."),
-  purchaseDate: z.string({ required_error: "O campo 'purchaseDate' é obrigatório." }).refine((date) => !isNaN(Date.parse(date)), {
+  name: z.string().min(1, "O campo 'name' não pode ser vazio."),
+  amount: z.number().positive("O valor deve ser positivo."),
+  purchaseDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Formato de 'purchaseDate' inválido. Use YYYY-MM-DD.",
   }),
-  transactionType: z.enum(LANCAMENTO_TRANSACTION_TYPES, { required_error: "O campo 'transactionType' é obrigatório ('Receita' ou 'Despesa')." }),
+  transactionType: z.enum(LANCAMENTO_TRANSACTION_TYPES),
   pagadorId: z.string().uuid("ID de pagador inválido.").optional().nullable(),
   contaId: z.string().uuid("ID de conta inválido.").optional().nullable(),
   categoriaId: z.string().uuid("ID de categoria inválido.").optional().nullable(),
   condition: z.string().optional().default('À vista'),
   paymentMethod: z.string().optional().default('Dinheiro'),
   note: z.string().optional().nullable(),
+  installmentCount: z.number().int().min(1).optional(),
 });
 
 // Schema for the bulk creation request (an array of lancamentos)
@@ -113,12 +115,20 @@ const createBulkLancamentosSchema = z.array(lancamentoInBulkSchema).min(1, "A re
 // POST /api/lancamentos - Cria um ou mais novos lançamentos
 export async function POST(request: Request) {
   try {
+    // 1. Autenticação
     const { user, error, status } = await authenticateRequest(request);
     if (error || !user) {
       return new NextResponse(JSON.stringify({ error: error || "Usuário não encontrado" }), { status, headers: { "Content-Type": "application/json" } });
     }
 
-    const body = await request.json();
+    // 2. Validação do Corpo da Requisição
+    let body = await request.json();
+    
+    // Se o corpo não for um array, transforma em um array com um único item
+    if (!Array.isArray(body)) {
+        body = [body];
+    }
+
     const validation = createBulkLancamentosSchema.safeParse(body);
 
     if (!validation.success) {
@@ -127,40 +137,111 @@ export async function POST(request: Request) {
 
     const { data: transactions } = validation;
     
-    // Busca o pagador padrão do usuário UMA VEZ.
-    const userPagador = await db.query.pagadores.findFirst({
-        columns: { id: true },
-        where: eq(schema.pagadores.userId, user.id)
-    });
-    const defaultPagadorId = userPagador?.id || null;
+    // 3. Validação de Integridade (FKs) e Preparação dos Dados
+    // Busca IDs válidos para garantir que pertencem ao usuário
+    const [userContas, userCategorias, userPagadores] = await Promise.all([
+        db.query.contas.findMany({ where: eq(schema.contas.userId, user.id), columns: { id: true } }),
+        db.query.categorias.findMany({ where: eq(schema.categorias.userId, user.id), columns: { id: true } }),
+        db.query.pagadores.findMany({ where: eq(schema.pagadores.userId, user.id), columns: { id: true } })
+    ]);
 
-    const recordsToInsert = transactions.map(transaction => {
-      const purchaseDateObj = new Date(transaction.purchaseDate);
-      const year = purchaseDateObj.getFullYear();
-      const month = String(purchaseDateObj.getMonth() + 1).padStart(2, '0');
-      const period = `${year}-${month}`;
+    const validContaIds = new Set(userContas.map(c => c.id));
+    const validCategoriaIds = new Set(userCategorias.map(c => c.id));
+    const validPagadorIds = new Set(userPagadores.map(p => p.id));
+    
+    // Busca o pagador padrão do usuário (se houver)
+    const defaultPagadorId = userPagadores.length > 0 ? userPagadores[0].id : null;
 
-      const amountSign = transaction.transactionType === 'Despesa' ? -1 : 1;
-      const finalAmount = (Math.abs(transaction.amount) * amountSign).toFixed(2);
-      
-      // Usa o pagadorId do lançamento, ou o padrão do usuário se não for provido.
-      const pagadorId = transaction.pagadorId ?? defaultPagadorId;
+    const recordsToInsert: typeof schema.lancamentos.$inferInsert[] = [];
 
-      return {
-        ...transaction,
-        amount: finalAmount,
-        pagadorId: pagadorId,
-        userId: user.id,
-        period: period,
-        purchaseDate: purchaseDateObj,
-      };
-    });
+    for (const transaction of transactions) {
+        // Validação de FKs
+        if (transaction.contaId && !validContaIds.has(transaction.contaId)) {
+            return new NextResponse(JSON.stringify({ error: `Conta inválida ou não pertence ao usuário: ${transaction.contaId}` }), { status: 400 });
+        }
+        if (transaction.categoriaId && !validCategoriaIds.has(transaction.categoriaId)) {
+            return new NextResponse(JSON.stringify({ error: `Categoria inválida ou não pertence ao usuário: ${transaction.categoriaId}` }), { status: 400 });
+        }
+        if (transaction.pagadorId && !validPagadorIds.has(transaction.pagadorId)) {
+            return new NextResponse(JSON.stringify({ error: `Pagador inválido ou não pertence ao usuário: ${transaction.pagadorId}` }), { status: 400 });
+        }
+
+        const purchaseDateObj = new Date(transaction.purchaseDate);
+        const year = purchaseDateObj.getFullYear();
+        const month = String(purchaseDateObj.getMonth() + 1).padStart(2, '0');
+        const initialPeriod = `${year}-${month}`;
+        
+        // Determina o sinal do valor (Despesa = negativo, Receita = positivo)
+        const amountSign = transaction.transactionType === 'Despesa' ? -1 : 1;
+        const totalAmountCents = Math.round(Math.abs(transaction.amount) * 100);
+
+        // Lógica de Parcelamento
+        const isInstallment = transaction.condition === 'Parcelado' && (transaction.installmentCount || 0) > 1;
+        
+        if (isInstallment) {
+            const installmentCount = transaction.installmentCount!;
+            const seriesId = crypto.randomUUID(); // Gera um ID único para a série de parcelas
+            
+            // Imports já realizados no topo do arquivo
+
+            
+            const base = Math.trunc(totalAmountCents / installmentCount);
+            const remainder = totalAmountCents % installmentCount;
+            
+            for (let i = 0; i < installmentCount; i++) {
+                // Lógica de Data
+                const installmentDate = new Date(purchaseDateObj);
+                installmentDate.setMonth(installmentDate.getMonth() + i);
+                
+                // Lógica de Período
+                const pYear = installmentDate.getFullYear();
+                const pMonth = String(installmentDate.getMonth() + 1).padStart(2, '0');
+                const period = `${pYear}-${pMonth}`;
+
+                // Lógica de Valor
+                const installmentAmountCents = base + (i < remainder ? 1 : 0);
+                const finalAmount = (installmentAmountCents / 100 * amountSign).toFixed(2);
+
+                recordsToInsert.push({
+                    ...transaction,
+                    amount: finalAmount,
+                    pagadorId: transaction.pagadorId ?? defaultPagadorId,
+                    userId: user.id,
+                    period: period,
+                    purchaseDate: installmentDate,
+                    installmentCount: installmentCount,
+                    currentInstallment: i + 1,
+                    seriesId: seriesId,
+                    isDivided: false, // Assumindo false por padrão na API
+                });
+            }
+
+        } else {
+            // Lançamento Único
+            const finalAmount = (Math.abs(transaction.amount) * amountSign).toFixed(2);
+            
+            recordsToInsert.push({
+                ...transaction,
+                amount: finalAmount,
+                pagadorId: transaction.pagadorId ?? defaultPagadorId,
+                userId: user.id,
+                period: initialPeriod,
+                purchaseDate: purchaseDateObj,
+                installmentCount: null,
+                currentInstallment: null,
+                seriesId: null,
+            });
+        }
+    }
     
     if (recordsToInsert.length === 0) {
         return new NextResponse(JSON.stringify({ error: "Nenhum lançamento válido para criar." }), { status: 400, headers: { "Content-Type": "application/json" } });
     }
 
-    const inserted = await db.insert(schema.lancamentos).values(recordsToInsert).returning();
+    // 4. Execução (Transaction)
+    const inserted = await db.transaction(async (tx: any) => {
+        return await tx.insert(schema.lancamentos).values(recordsToInsert).returning();
+    });
 
     return new NextResponse(JSON.stringify(inserted), { status: 201, headers: { "Content-Type": "application/json" } });
 

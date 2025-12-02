@@ -58,3 +58,34 @@ export function formatInitialBalanceInput(value?: number | null): string {
 
   return (Math.round(value * 100) / 100).toFixed(2);
 }
+
+/**
+ * Splits a total amount (in cents) into equal parts, handling remainders
+ * @param totalCents - The total amount in cents
+ * @param parts - Number of parts to split into
+ * @returns Array of numbers representing the amount in cents for each part
+ */
+export function splitAmount(totalCents: number, parts: number): number[] {
+  if (parts <= 0) {
+    return [];
+  }
+
+  const base = Math.trunc(totalCents / parts);
+  const remainder = totalCents % parts;
+
+  return Array.from(
+    { length: parts },
+    (_, index) => base + (index < remainder ? 1 : 0)
+  );
+}
+
+/**
+ * Converts cents to a decimal string (e.g. 1050 -> "10.50")
+ * @param value - Value in cents
+ * @returns Formatted decimal string
+ */
+export function centsToDecimalString(value: number): string {
+  const decimal = value / 100;
+  const formatted = decimal.toFixed(2);
+  return Object.is(decimal, -0) ? "0.00" : formatted;
+}
