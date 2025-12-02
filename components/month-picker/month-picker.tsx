@@ -8,6 +8,7 @@ import { useEffect, useMemo, useTransition } from "react";
 import LoadingSpinner from "./loading-spinner";
 import NavigationButton from "./nav-button";
 import ReturnButton from "./return-button";
+import { MonthYearPicker } from "./month-year-picker";
 
 export default function MonthPicker() {
   const {
@@ -28,7 +29,7 @@ export default function MonthPicker() {
   );
 
   const currentMonthIndex = useMemo(
-    () => monthNames.indexOf(currentMonth),
+    () => monthNames.indexOf(currentMonth as any),
     [monthNames, currentMonth]
   );
 
@@ -91,14 +92,22 @@ export default function MonthPicker() {
         />
 
         <div className="flex items-center">
-          <div
-            className="mx-1 space-x-1 capitalize font-bold tracking-wide"
-            aria-current={!isDifferentFromCurrent ? "date" : undefined}
-            aria-label={`Período selecionado: ${currentMonthLabel} de ${currentYear}`}
+          <MonthYearPicker
+            currentMonth={currentMonth}
+            currentYear={currentYear}
+            monthNames={monthNames}
+            onSelect={(month, year) => handleNavigate(buildHref(month, year))}
           >
-            <span>{currentMonthLabel}</span>
-            <span>{currentYear}</span>
-          </div>
+            <button
+              type="button"
+              className="mx-1 space-x-1 capitalize font-bold tracking-wide hover:bg-accent hover:text-accent-foreground px-2 py-1 rounded-md transition-colors cursor-pointer"
+              aria-current={!isDifferentFromCurrent ? "date" : undefined}
+              aria-label={`Período selecionado: ${currentMonthLabel} de ${currentYear}. Clique para alterar.`}
+            >
+              <span>{currentMonthLabel}</span>
+              <span>{currentYear}</span>
+            </button>
+          </MonthYearPicker>
 
           {isPending && <LoadingSpinner />}
         </div>
