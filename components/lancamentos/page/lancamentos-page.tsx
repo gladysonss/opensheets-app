@@ -21,6 +21,7 @@ import { LancamentoDetailsDialog } from "../dialogs/lancamento-details-dialog";
 import { LancamentoDialog } from "../dialogs/lancamento-dialog/lancamento-dialog";
 import { LancamentosTable } from "../table/lancamentos-table";
 import { MassAddDialog, type MassAddFormData } from "../dialogs/mass-add-dialog";
+import { ImportLancamentosDialog } from "../dialogs/import-lancamentos-dialog";
 import type {
   ContaCartaoFilterOption,
   LancamentoFilterOption,
@@ -72,6 +73,7 @@ export function LancamentosPage({
   const [editOpen, setEditOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [massAddOpen, setMassAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [lancamentoToDelete, setLancamentoToDelete] =
     useState<LancamentoItem | null>(null);
@@ -285,6 +287,10 @@ export function LancamentosPage({
     setMassAddOpen(true);
   }, []);
 
+  const handleImport = useCallback(() => {
+    setImportOpen(true);
+  }, []);
+
   const handleEdit = useCallback((item: LancamentoItem) => {
     setSelectedLancamento(item);
     setEditOpen(true);
@@ -393,6 +399,7 @@ export function LancamentosPage({
         contaCartaoFilterOptions={contaCartaoFilterOptions}
         onCreate={allowCreate ? handleCreate : undefined}
         onMassAdd={allowCreate ? handleMassAdd : undefined}
+        onImport={allowCreate ? handleImport : undefined}
         onEdit={handleEdit}
         onConfirmDelete={handleConfirmDelete}
         onBulkDelete={handleMultipleBulkDelete}
@@ -517,6 +524,14 @@ export function LancamentosPage({
           estabelecimentos={estabelecimentos}
           selectedPeriod={selectedPeriod}
           defaultPagadorId={defaultPagadorId}
+        />
+      ) : null}
+
+      {allowCreate ? (
+        <ImportLancamentosDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onConfirm={handleMassAddSubmit}
         />
       ) : null}
 

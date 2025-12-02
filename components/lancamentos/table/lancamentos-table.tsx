@@ -58,6 +58,7 @@ import {
   RiThumbUpFill,
   RiThumbUpLine,
   RiTimeLine,
+  RiUploadCloud2Line,
 } from "@remixicon/react";
 import {
   ColumnDef,
@@ -582,6 +583,7 @@ type LancamentosTableProps = {
   contaCartaoFilterOptions?: ContaCartaoFilterOption[];
   onCreate?: () => void;
   onMassAdd?: () => void;
+  onImport?: () => void;
   onEdit?: (item: LancamentoItem) => void;
   onConfirmDelete?: (item: LancamentoItem) => void;
   onBulkDelete?: (items: LancamentoItem[]) => void;
@@ -602,6 +604,7 @@ export function LancamentosTable({
   contaCartaoFilterOptions = [],
   onCreate,
   onMassAdd,
+  onImport,
   onEdit,
   onConfirmDelete,
   onBulkDelete,
@@ -703,11 +706,24 @@ export function LancamentosTable({
                   variant="outline"
                   size="icon"
                   className="shrink-0"
+                  title="Adicionar múltiplos lançamentos"
                 >
                   <RiAddCircleFill className="size-4" />
                   <span className="sr-only">
                     Adicionar múltiplos lançamentos
                   </span>
+                </Button>
+              ) : null}
+              {onImport ? (
+                <Button
+                  onClick={onImport}
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  title="Importar lançamentos"
+                >
+                  <RiUploadCloud2Line className="size-4" />
+                  <span className="sr-only">Importar lançamentos</span>
                 </Button>
               ) : null}
             </div>
