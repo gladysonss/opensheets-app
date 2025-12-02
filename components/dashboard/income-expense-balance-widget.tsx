@@ -62,7 +62,7 @@ export function IncomeExpenseBalanceWidget({
       <ChartContainer
         id="income-expense-balance-chart"
         config={chartConfig}
-        className="h-[270px] w-full aspect-auto"
+        className="h-[270px] w-full aspect-auto min-w-0"
       >
         <BarChart
           data={chartData}

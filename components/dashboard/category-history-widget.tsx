@@ -344,7 +344,7 @@ export function CategoryHistoryWidget({ data }: CategoryHistoryWidgetProps) {
             />
           </div>
         ) : (
-          <ChartContainer config={chartConfig} className="h-[450px] w-full">
+          <ChartContainer config={chartConfig} className="h-[450px] w-full aspect-auto min-w-0">
             <AreaChart
               data={filteredChartData}
               margin={{ top: 10, right: 20, left: 10, bottom: 0 }}

@@ -12,12 +12,12 @@ const normalizeKey = (value: string) =>
 
 export const getIconComponent = (
   iconName: string
-): ComponentType<{ className?: string }> | null => {
+): ComponentType<React.SVGProps<SVGSVGElement>> | null => {
   // Busca o ícone no objeto de ícones do Remix Icon
   const icon = (RemixIcons as Record<string, unknown>)[iconName];
 
   if (icon && typeof icon === "function") {
-    return icon as ComponentType<{ className?: string }>;
+    return icon as ComponentType<React.SVGProps<SVGSVGElement>>;
   }
 
   return null;
