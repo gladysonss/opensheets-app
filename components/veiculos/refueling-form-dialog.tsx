@@ -32,7 +32,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { createRefuelingAction } from "@/app/(dashboard)/veiculos/actions";
 import { Plus, Fuel } from "lucide-react";
@@ -55,6 +55,7 @@ const refuelingSchema = z.object({
   paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
   contaId: uuidSchema("Conta").optional().nullable(),
   cartaoId: uuidSchema("Cartão").optional().nullable(),
+  pagadorId: uuidSchema("Pagador").optional().nullable(),
   note: z.string().optional().nullable(),
 });
 
@@ -70,6 +71,7 @@ interface RefuelingFormDialogProps {
   vehicleOptions?: Option[];
   contaOptions: Option[];
   cartaoOptions: Option[];
+  pagadorOptions: Option[];
   lastOdometer?: number;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -81,6 +83,7 @@ export function RefuelingFormDialog({
   vehicleOptions = [],
   contaOptions,
   cartaoOptions,
+  pagadorOptions,
   lastOdometer = 0,
   open: controlledOpen,
   onOpenChange: setControlledOpen,
@@ -88,6 +91,7 @@ export function RefuelingFormDialog({
 }: RefuelingFormDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [currentLastOdometer, setCurrentLastOdometer] = useState(lastOdometer);
 
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = setControlledOpen ?? setUncontrolledOpen;
@@ -95,7 +99,7 @@ export function RefuelingFormDialog({
   const form = useForm<RefuelingFormValues>({
     resolver: zodResolver(refuelingSchema),
     defaultValues: {
-      veiculoId: veiculoId ?? "",
+      veiculoId: veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
       date: getTodayDateString(),
       odometer: 0, // Start as 0 (empty in UI)
       liters: 0,
@@ -104,11 +108,21 @@ export function RefuelingFormDialog({
       fuelType: "Gasolina",
       isFullTank: true,
       paymentMethod: "Cartão de crédito",
+      pagadorId: pagadorOptions.length > 0 ? pagadorOptions[0].value : "",
       note: "",
     },
   });
 
   const paymentMethod = form.watch("paymentMethod");
+  const selectedVehicleId = form.watch("veiculoId");
+
+  // Update currentLastOdometer when selected vehicle changes
+  useEffect(() => {
+    const selectedVehicle = vehicleOptions.find((v: any) => v.value === selectedVehicleId);
+    if (selectedVehicle) {
+      setCurrentLastOdometer(selectedVehicle.lastOdometer ?? 0);
+    }
+  }, [selectedVehicleId, vehicleOptions]);
 
   function onSubmit(values: RefuelingFormValues) {
     // If odometer is 0 (empty) and we have a last odometer, use that
@@ -125,7 +139,7 @@ export function RefuelingFormDialog({
           toast.success(result.message);
           setOpen(false);
           form.reset({
-            veiculoId,
+            veiculoId: veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
             date: new Date().toISOString().split("T")[0],
             odometer: 0, 
             liters: 0,
@@ -136,6 +150,7 @@ export function RefuelingFormDialog({
             paymentMethod: values.paymentMethod,
             contaId: values.contaId,
             cartaoId: values.cartaoId,
+            pagadorId: values.pagadorId,
             note: "",
           });
         } else {
@@ -149,16 +164,7 @@ export function RefuelingFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger ? (
-        <DialogTrigger asChild>{trigger}</DialogTrigger>
-      ) : (
-        <DialogTrigger asChild>
-          <Button>
-            <Fuel className="mr-2 h-4 w-4" />
-            Novo Abastecimento
-          </Button>
-        </DialogTrigger>
-      )}
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Novo Abastecimento</DialogTitle>
@@ -223,7 +229,7 @@ export function RefuelingFormDialog({
                     <FormControl>
                       <Input
                         type="number"
-                        placeholder={lastOdometer > 0 ? `Último: ${lastOdometer} km` : "0"}
+                        placeholder={currentLastOdometer > 0 ? `Último: ${currentLastOdometer} km` : "0"}
                         {...field}
                         value={field.value === 0 ? "" : field.value}
                         onChange={(e) => field.onChange(Number(e.target.value))}
@@ -244,7 +250,7 @@ export function RefuelingFormDialog({
                     <FormLabel>Litros</FormLabel>
                     <FormControl>
                       <DecimalInput
-                        value={field.value}
+                        value={field.value ?? 0}
                         onValueChange={(val) => {
                           const numVal = Number(val);
                           field.onChange(numVal);
@@ -447,6 +453,34 @@ export function RefuelingFormDialog({
                 />
               )}
             </div>
+
+            <FormField
+              control={form.control}
+              name="pagadorId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pagador</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? undefined}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o pagador" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {pagadorOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

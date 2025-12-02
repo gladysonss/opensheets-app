@@ -1,10 +1,6 @@
 import { getVehicleById } from "../data";
 import { notFound } from "next/navigation";
-import { RefuelingFormDialog } from "@/components/veiculos/refueling-form-dialog";
-import { db } from "@/lib/db";
-import { getUser } from "@/lib/auth/server";
-import { eq } from "drizzle-orm";
-import { contas, cartoes } from "@/db/schema";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -33,22 +29,7 @@ export default async function VehicleDetailsPage({
     notFound();
   }
 
-  const user = await getUser();
-  const userContas = await db.query.contas.findMany({
-    where: eq(contas.userId, user.id),
-  });
-  const userCartoes = await db.query.cartoes.findMany({
-    where: eq(cartoes.userId, user.id),
-  });
 
-  const contaOptions = userContas.map((c: any) => ({
-    label: c.name,
-    value: c.id,
-  }));
-  const cartaoOptions = userCartoes.map((c: any) => ({
-    label: c.name,
-    value: c.id,
-  }));
 
   const totalRefuelingCost = vehicle.abastecimentos.reduce(
     (acc: number, curr: any) => acc + Number(curr.totalCost),
@@ -69,15 +50,7 @@ export default async function VehicleDetailsPage({
             {vehicle.plate ? ` - ${vehicle.plate}` : ""}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <MonthPicker />
-          <RefuelingFormDialog
-            veiculoId={vehicle.id}
-            contaOptions={contaOptions}
-            cartaoOptions={cartaoOptions}
-            lastOdometer={vehicle.abastecimentos[0]?.odometer ?? 0}
-          />
-        </div>
+        <MonthPicker />
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">

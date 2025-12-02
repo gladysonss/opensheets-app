@@ -646,12 +646,60 @@ export const abastecimentos = pgTable("abastecimentos", {
     .defaultNow(),
 });
 
+export const manutencoes = pgTable("manutencoes", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  veiculoId: uuid("veiculo_id")
+    .notNull()
+    .references(() => veiculos.id, { onDelete: "cascade" }),
+  date: date("data", { mode: "date" }).notNull(),
+  odometer: integer("odometro").notNull(), // Km no momento da manutenção
+  
+  // Tipo de manutenção
+  type: text("tipo").notNull(), // preventiva, corretiva, revisao, outros
+  
+  // Detalhes do serviço
+  serviceName: text("nome_servico").notNull(), // Ex: "Troca de óleo", "Alinhamento"
+  description: text("descricao"), // Detalhes adicionais
+  
+  // Peças e custos
+  parts: text("pecas"), // Lista de peças trocadas
+  laborCost: numeric("mao_obra", { precision: 12, scale: 2 }), // Custo da mão de obra
+  partsCost: numeric("custo_pecas", { precision: 12, scale: 2 }), // Custo das peças
+  totalCost: numeric("valor_total", { precision: 12, scale: 2 }).notNull(),
+  
+  // Oficina/Local
+  workshop: text("oficina"), // Nome da oficina
+  
+  // Próxima manutenção (opcional)
+  nextMaintenanceKm: integer("proxima_km"), // Próxima manutenção em Km
+  nextMaintenanceDate: date("proxima_data", { mode: "date" }), // Próxima manutenção por data
+  
+  // Relacionamento com lançamento financeiro
+  lancamentoId: uuid("lancamento_id").references(() => lancamentos.id, {
+    onDelete: "cascade",
+  }),
+  
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
+});
+
+
 export const veiculosRelations = relations(veiculos, ({ one, many }) => ({
   user: one(user, {
     fields: [veiculos.userId],
     references: [user.id],
   }),
   abastecimentos: many(abastecimentos),
+  manutencoes: many(manutencoes),
   lancamentos: many(lancamentos),
 }));
 
@@ -669,6 +717,22 @@ export const abastecimentosRelations = relations(abastecimentos, ({ one }) => ({
     references: [user.id],
   }),
 }));
+
+export const manutencoesRelations = relations(manutencoes, ({ one }) => ({
+  veiculo: one(veiculos, {
+    fields: [manutencoes.veiculoId],
+    references: [veiculos.id],
+  }),
+  lancamento: one(lancamentos, {
+    fields: [manutencoes.lancamentoId],
+    references: [lancamentos.id],
+  }),
+  user: one(user, {
+    fields: [manutencoes.userId],
+    references: [user.id],
+  }),
+}));
+
 
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
@@ -688,3 +752,4 @@ export type InstallmentAnticipation =
   typeof installmentAnticipations.$inferSelect;
 export type Veiculo = typeof veiculos.$inferSelect;
 export type Abastecimento = typeof abastecimentos.$inferSelect;
+export type Manutencao = typeof manutencoes.$inferSelect;

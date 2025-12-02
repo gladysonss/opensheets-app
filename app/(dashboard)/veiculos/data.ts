@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getUser } from "@/lib/auth/server";
-import { veiculos, abastecimentos } from "@/db/schema";
+import { veiculos, abastecimentos, manutencoes } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 
 export async function getVehicles() {
@@ -9,6 +9,16 @@ export async function getVehicles() {
   const data = await db.query.veiculos.findMany({
     where: eq(veiculos.userId, user.id),
     orderBy: [desc(veiculos.createdAt)],
+    with: {
+      abastecimentos: {
+        orderBy: [desc(abastecimentos.date)],
+        limit: 1,
+      },
+      manutencoes: {
+        orderBy: [desc(manutencoes.date)],
+        limit: 5,
+      },
+    },
   });
 
   return data;
@@ -49,6 +59,17 @@ export async function getVehicleById(id: string, period?: Date) {
               )
             : undefined,
         orderBy: (lancamentos, { desc }) => [desc(lancamentos.purchaseDate)],
+        limit: 50,
+      },
+      manutencoes: {
+        where: (manutencoes, { and, gte, lte }) => 
+          period 
+            ? and(
+                gte(manutencoes.date, startOfMonth!),
+                lte(manutencoes.date, endOfMonth!)
+              )
+            : undefined,
+        orderBy: [desc(manutencoes.date)],
         limit: 50,
       },
     },

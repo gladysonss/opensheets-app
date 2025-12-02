@@ -1,26 +1,29 @@
 import { getVehicles } from "./data";
 import { VehicleFormDialog } from "@/components/veiculos/vehicle-form-dialog";
-import { RefuelingFormDialog } from "@/components/veiculos/refueling-form-dialog";
+import { VehiclesActions } from "@/components/veiculos/vehicles-actions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Car, Plus, Fuel, Edit, Eye, Trash2, Bike, Truck, Bus, MoreHorizontal } from "lucide-react";
+import { Car, Plus, Edit, Eye, Trash2, Bike, Truck, Bus, MoreHorizontal } from "lucide-react";
 import { type Veiculo } from "@/db/schema";
 import { getUser } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { contas, cartoes } from "@/db/schema";
+import { contas, cartoes, pagadores } from "@/db/schema";
 import { Badge } from "@/components/ui/badge";
 
 export default async function VeiculosPage() {
   const user = await getUser();
-  const [vehicles, userContas, userCartoes] = await Promise.all([
+  const [vehicles, userContas, userCartoes, userPagadores] = await Promise.all([
     getVehicles(),
     db.query.contas.findMany({
       where: eq(contas.userId, user.id),
     }),
     db.query.cartoes.findMany({
       where: eq(cartoes.userId, user.id),
+    }),
+    db.query.pagadores.findMany({
+      where: eq(pagadores.userId, user.id),
     }),
   ]);
 
@@ -32,9 +35,14 @@ export default async function VeiculosPage() {
     label: c.name,
     value: c.id,
   }));
-  const vehicleOptions = vehicles.map((v) => ({
+  const vehicleOptions = vehicles.map((v: any) => ({
     label: v.name,
     value: v.id,
+    lastOdometer: v.abastecimentos?.[0]?.odometer ?? 0,
+  }));
+  const pagadorOptions = userPagadores.map((p: any) => ({
+    label: p.name,
+    value: p.id,
   }));
 
   return (
@@ -55,16 +63,11 @@ export default async function VeiculosPage() {
             </Button>
           }
         />
-        <RefuelingFormDialog
+        <VehiclesActions
           vehicleOptions={vehicleOptions}
           contaOptions={contaOptions}
           cartaoOptions={cartaoOptions}
-          trigger={
-            <Button variant="secondary">
-              <Fuel className="mr-2 h-4 w-4" />
-              Novo Abastecimento
-            </Button>
-          }
+          pagadorOptions={pagadorOptions}
         />
       </div>
 

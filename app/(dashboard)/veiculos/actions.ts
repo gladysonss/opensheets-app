@@ -1,6 +1,6 @@
 "use server";
 
-import { veiculos, abastecimentos, lancamentos } from "@/db/schema";
+import { veiculos, abastecimentos, lancamentos, manutencoes } from "@/db/schema";
 import { handleActionError, revalidateForEntity } from "@/lib/actions/helpers";
 import type { ActionResult } from "@/lib/actions/types";
 import { db } from "@/lib/db";
@@ -64,6 +64,7 @@ const refuelingSchema = z.object({
   paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
   contaId: uuidSchema("Conta").optional().nullable(),
   cartaoId: uuidSchema("Cartão").optional().nullable(),
+  pagadorId: uuidSchema("Pagador").optional().nullable(),
   note: z.string().optional().nullable(),
 });
 
@@ -199,6 +200,7 @@ export async function createRefuelingAction(
           cartaoId: data.cartaoId,
           note: data.note,
           veiculoId: data.veiculoId,
+          pagadorId: data.pagadorId,
           isSettled: true, // Assuming paid immediately
         })
         .returning({ id: lancamentos.id });
@@ -270,6 +272,243 @@ export async function deleteRefuelingAction(
     revalidateForEntity("veiculos");
     revalidateForEntity("lancamentos");
     return { success: true, message: "Abastecimento removido com sucesso." };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}
+
+// ==========================================
+// Schemas - Manutenções
+// ==========================================
+
+const maintenanceSchema = z.object({
+  veiculoId: uuidSchema("Veículo"),
+  date: z.string().refine((val) => !isNaN(Date.parse(val)), "Data inválida"),
+  odometer: z.coerce.number().min(0, "Odômetro inválido"),
+  type: z.enum(["preventiva", "corretiva", "revisao", "outros"]),
+  serviceName: z.string().min(1, "Informe o nome do serviço"),
+  description: z.string().optional().nullable(),
+  parts: z.string().optional().nullable(),
+  laborCost: z.coerce.number().min(0, "Custo de mão de obra inválido").optional().nullable(),
+  partsCost: z.coerce.number().min(0, "Custo de peças inválido").optional().nullable(),
+  totalCost: z.coerce.number().positive("Custo total deve ser maior que zero"),
+  workshop: z.string().optional().nullable(),
+  nextMaintenanceKm: z.coerce.number().min(0).optional().nullable(),
+  nextMaintenanceDate: z.string().refine((val) => !val || !isNaN(Date.parse(val)), "Data inválida").optional().nullable(),
+  // Fields for the expense (lancamento)
+  paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
+  contaId: uuidSchema("Conta").optional().nullable(),
+  cartaoId: uuidSchema("Cartão").optional().nullable(),
+  pagadorId: uuidSchema("Pagador").optional().nullable(),
+  note: z.string().optional().nullable(),
+});
+
+const createMaintenanceSchema = maintenanceSchema;
+const updateMaintenanceSchema = maintenanceSchema.extend({
+  id: uuidSchema("Manutenção"),
+});
+const deleteMaintenanceSchema = z.object({
+  id: uuidSchema("Manutenção"),
+});
+
+type CreateMaintenanceInput = z.infer<typeof createMaintenanceSchema>;
+type UpdateMaintenanceInput = z.infer<typeof updateMaintenanceSchema>;
+type DeleteMaintenanceInput = z.infer<typeof deleteMaintenanceSchema>;
+
+// ==========================================
+// Actions - Manutenções
+// ==========================================
+
+export async function createMaintenanceAction(
+  input: CreateMaintenanceInput
+): Promise<ActionResult> {
+  try {
+    const user = await getUser();
+    const data = createMaintenanceSchema.parse(input);
+
+    const vehicle = await db.query.veiculos.findFirst({
+      where: and(eq(veiculos.id, data.veiculoId), eq(veiculos.userId, user.id)),
+    });
+
+    if (!vehicle) {
+      return { success: false, error: "Veículo não encontrado." };
+    }
+
+    // Create Expense (Lancamento)
+    const maintenanceDate = parseLocalDateString(data.date);
+    const period = `${maintenanceDate.getFullYear()}-${String(
+      maintenanceDate.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+    await db.transaction(async (tx) => {
+      const [lancamento] = await tx
+        .insert(lancamentos)
+        .values({
+          userId: user.id,
+          name: `Manutenção - ${vehicle.name} - ${data.serviceName}`,
+          amount: formatDecimalForDbRequired(data.totalCost * -1), // Expense is negative
+          transactionType: "Despesa",
+          condition: "À vista",
+          paymentMethod: data.paymentMethod,
+          purchaseDate: maintenanceDate,
+          period: period,
+          contaId: data.contaId,
+          cartaoId: data.cartaoId,
+          pagadorId: data.pagadorId,
+          note: data.note,
+          isSettled: true,
+        })
+        .returning({ id: lancamentos.id });
+
+      await tx.insert(manutencoes).values({
+        userId: user.id,
+        veiculoId: data.veiculoId,
+        lancamentoId: lancamento.id,
+        date: maintenanceDate,
+        odometer: data.odometer,
+        type: data.type,
+        serviceName: data.serviceName,
+        description: data.description,
+        parts: data.parts,
+        laborCost: data.laborCost ? formatDecimalForDbRequired(data.laborCost) : null,
+        partsCost: data.partsCost ? formatDecimalForDbRequired(data.partsCost) : null,
+        totalCost: formatDecimalForDbRequired(data.totalCost),
+        workshop: data.workshop,
+        nextMaintenanceKm: data.nextMaintenanceKm,
+        nextMaintenanceDate: data.nextMaintenanceDate ? parseLocalDateString(data.nextMaintenanceDate) : null,
+      });
+    });
+
+    revalidateForEntity("veiculos");
+    revalidateForEntity("lancamentos");
+    return { success: true, message: "Manutenção registrada com sucesso." };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}
+
+export async function updateMaintenanceAction(
+  input: UpdateMaintenanceInput
+): Promise<ActionResult> {
+  try {
+    const user = await getUser();
+    const data = updateMaintenanceSchema.parse(input);
+
+    const existing = await db.query.manutencoes.findFirst({
+      where: and(eq(manutencoes.id, data.id), eq(manutencoes.userId, user.id)),
+    });
+
+    if (!existing) {
+      return { success: false, error: "Manutenção não encontrada." };
+    }
+
+    const vehicle = await db.query.veiculos.findFirst({
+      where: and(eq(veiculos.id, data.veiculoId), eq(veiculos.userId, user.id)),
+    });
+
+    if (!vehicle) {
+      return { success: false, error: "Veículo não encontrado." };
+    }
+
+    const maintenanceDate = parseLocalDateString(data.date);
+    const period = `${maintenanceDate.getFullYear()}-${String(
+      maintenanceDate.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+    await db.transaction(async (tx) => {
+      // Update maintenance
+      await tx
+        .update(manutencoes)
+        .set({
+          veiculoId: data.veiculoId,
+          date: maintenanceDate,
+          odometer: data.odometer,
+          type: data.type,
+          serviceName: data.serviceName,
+          description: data.description,
+          parts: data.parts,
+          laborCost: data.laborCost ? formatDecimalForDbRequired(data.laborCost) : null,
+          partsCost: data.partsCost ? formatDecimalForDbRequired(data.partsCost) : null,
+          totalCost: formatDecimalForDbRequired(data.totalCost),
+          workshop: data.workshop,
+          nextMaintenanceKm: data.nextMaintenanceKm,
+          nextMaintenanceDate: data.nextMaintenanceDate ? parseLocalDateString(data.nextMaintenanceDate) : null,
+        })
+        .where(
+          and(eq(manutencoes.id, data.id), eq(manutencoes.userId, user.id))
+        );
+
+      // Update associated lancamento if it exists
+      if (existing.lancamentoId) {
+        await tx
+          .update(lancamentos)
+          .set({
+            name: `Manutenção - ${vehicle.name} - ${data.serviceName}`,
+            amount: formatDecimalForDbRequired(data.totalCost * -1),
+            paymentMethod: data.paymentMethod,
+            purchaseDate: maintenanceDate,
+            period: period,
+            contaId: data.contaId,
+            cartaoId: data.cartaoId,
+            pagadorId: data.pagadorId,
+            note: data.note,
+          })
+          .where(
+            and(
+              eq(lancamentos.id, existing.lancamentoId),
+              eq(lancamentos.userId, user.id)
+            )
+          );
+      }
+    });
+
+    revalidateForEntity("veiculos");
+    revalidateForEntity("lancamentos");
+    return { success: true, message: "Manutenção atualizada com sucesso." };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}
+
+export async function deleteMaintenanceAction(
+  input: DeleteMaintenanceInput
+): Promise<ActionResult> {
+  try {
+    const user = await getUser();
+    const data = deleteMaintenanceSchema.parse(input);
+
+    const existing = await db.query.manutencoes.findFirst({
+      where: and(eq(manutencoes.id, data.id), eq(manutencoes.userId, user.id)),
+    });
+
+    if (!existing) {
+      return { success: false, error: "Manutenção não encontrada." };
+    }
+
+    await db.transaction(async (tx) => {
+      // Delete maintenance
+      await tx
+        .delete(manutencoes)
+        .where(
+          and(eq(manutencoes.id, data.id), eq(manutencoes.userId, user.id))
+        );
+
+      // Delete associated lancamento if it exists
+      if (existing.lancamentoId) {
+        await tx
+          .delete(lancamentos)
+          .where(
+            and(
+              eq(lancamentos.id, existing.lancamentoId),
+              eq(lancamentos.userId, user.id)
+            )
+          );
+      }
+    });
+
+    revalidateForEntity("veiculos");
+    revalidateForEntity("lancamentos");
+    return { success: true, message: "Manutenção removida com sucesso." };
   } catch (error) {
     return handleActionError(error);
   }
