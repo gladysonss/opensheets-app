@@ -60,6 +60,7 @@ export function IncomeExpenseBalanceWidget({
   return (
     <CardContent className="space-y-4 px-0">
       <ChartContainer
+        id="income-expense-balance-chart"
         config={chartConfig}
         className="h-[270px] w-full aspect-auto"
       >

@@ -741,50 +741,6 @@ opensheets/
 │   │   └── cartoes/         # API Cartões
 │   ├── (dashboard)/         # Protected routes (com auth)
 │   └── layout.tsx           # Root layout
-
----
-
-## 🔌 API Endpoints
-
-O Opensheets fornece endpoints para consulta de dados. Todas as requisições devem ser autenticadas.
-
-### Autenticação
-
-Envie o token no header `Authorization`:
-
-```http
-Authorization: Bearer <SEU_TOKEN_API>
-```
-
-### Endpoints Disponíveis
-
-#### 1. Pagadores
-Retorna a lista de pagadores cadastrados.
-
-- **URL:** `/api/pagadores`
-- **Método:** `GET`
-- **Resposta:** Array de objetos `Pagador`
-
-#### 2. Categorias
-Retorna a lista de categorias cadastradas.
-
-- **URL:** `/api/categorias`
-- **Método:** `GET`
-- **Resposta:** Array de objetos `Categoria`
-
-#### 3. Contas (Bancos)
-Retorna a lista de contas bancárias.
-
-- **URL:** `/api/contas`
-- **Método:** `GET`
-- **Resposta:** Array de objetos `Conta`
-
-#### 4. Cartões
-Retorna a lista de cartões de crédito.
-
-- **URL:** `/api/cartoes`
-- **Método:** `GET`
-- **Resposta:** Array de objetos `Cartao`
 │
 ├── components/              # React Components
 │   ├── ui/                  # shadcn/ui components
@@ -862,9 +818,39 @@ Todas as requisições devem incluir o token de API do usuário no header `Autho
 Authorization: Bearer SEU_TOKEN_AQUI
 ```
 
+### Endpoints Disponíveis
+
+#### 1. Pagadores
+Retorna a lista de pagadores cadastrados.
+
+- **URL:** `/api/pagadores`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Pagador`
+
+#### 2. Categorias
+Retorna a lista de categorias cadastradas.
+
+- **URL:** `/api/categorias`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Categoria`
+
+#### 3. Contas (Bancos)
+Retorna a lista de contas bancárias.
+
+- **URL:** `/api/contas`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Conta`
+
+#### 4. Cartões
+Retorna a lista de cartões de crédito.
+
+- **URL:** `/api/cartoes`
+- **Método:** `GET`
+- **Resposta:** Array de objetos `Cartao`
+
 ### Lançamentos (`/api/lancamentos`)
 
-#### Criar Lançamento (POST)
+#### 5. Criar Lançamento (POST)
 
 Cria um ou mais lançamentos. Suporta parcelamento automático.
 
@@ -896,6 +882,8 @@ Pode ser um **objeto único** ou um **array de objetos**.
 - **Data:** A `purchaseDate` é respeitada localmente (fuso horário) para evitar deslocamentos de dia/mês.
 
 ---
+
+
 
 ## 🤝 Contribuindo
 

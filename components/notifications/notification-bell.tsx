@@ -74,6 +74,7 @@ export function NotificationBell({
               type="button"
               aria-label="Notificações"
               aria-expanded={open}
+              suppressHydrationWarning
               data-has-notifications={hasNotifications}
               className={cn(
                 buttonVariants({ variant: "ghost", size: "icon-sm" }),

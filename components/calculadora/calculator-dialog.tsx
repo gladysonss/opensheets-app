@@ -49,6 +49,7 @@ export function CalculatorDialogButton({
                 type="button"
                 aria-label="Calculadora"
                 aria-expanded={open}
+                suppressHydrationWarning
                 data-state={open ? "open" : "closed"}
                 className={cn(
                   buttonVariants({ variant: "ghost", size: "icon-sm" }),
