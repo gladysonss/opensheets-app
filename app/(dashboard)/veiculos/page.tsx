@@ -1,21 +1,16 @@
 import { getVehicles } from "./data";
 import { VehicleFormDialog } from "@/components/veiculos/vehicle-form-dialog";
 import { RefuelingFormDialog } from "@/components/veiculos/refueling-form-dialog";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Car, Settings, Plus, Fuel } from "lucide-react";
+import { Car, Plus, Fuel, Edit, Eye, Trash2, Bike, Truck, Bus, MoreHorizontal } from "lucide-react";
 import { type Veiculo } from "@/db/schema";
 import { getUser } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { contas, cartoes } from "@/db/schema";
+import { Badge } from "@/components/ui/badge";
 
 export default async function VeiculosPage() {
   const user = await getUser();
@@ -88,46 +83,83 @@ export default async function VeiculosPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {vehicles.map((vehicle: Veiculo) => (
-            <Card key={vehicle.id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xl font-bold">
-                  {vehicle.name}
-                </CardTitle>
-                <Car className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm text-muted-foreground mb-4">
-                  {vehicle.brand} {vehicle.model} {vehicle.year}
+          {vehicles.map((vehicle: Veiculo) => {
+             const Icon =
+              vehicle.type === "motorcycle"
+                ? Bike
+                : vehicle.type === "truck"
+                ? Truck
+                : vehicle.type === "bus"
+                ? Bus
+                : vehicle.type === "other"
+                ? MoreHorizontal
+                : Car;
+
+            return (
+            <Card key={vehicle.id} className="overflow-hidden p-6">
+              <div className="relative flex flex-col items-start">
+                <div className="relative mb-3 flex size-16 items-center justify-center overflow-hidden rounded-full border-background bg-primary/10 shadow-sm">
+                  <Icon className="h-8 w-8 text-primary" />
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="px-2 py-1 rounded-full bg-secondary text-secondary-foreground text-xs">
+
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-base font-semibold text-foreground">
+                    {vehicle.name}
+                  </h3>
+                </div>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {vehicle.brand} {vehicle.model} {vehicle.year}
+                </p>
+
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+                  <Badge
+                    variant={vehicle.status === "active" ? "default" : "outline"}
+                    className={
+                      vehicle.status === "active"
+                        ? "bg-green-500 hover:bg-green-600 border-transparent"
+                        : ""
+                    }
+                  >
                     {vehicle.status === "active"
                       ? "Ativo"
                       : vehicle.status === "sold"
                       ? "Vendido"
                       : "Inativo"}
-                  </span>
+                  </Badge>
                   {vehicle.plate && (
-                    <span className="font-mono">{vehicle.plate}</span>
+                    <Badge variant="outline" className="font-mono text-xs">
+                      {vehicle.plate}
+                    </Badge>
                   )}
                 </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/veiculos/${vehicle.id}`}>Detalhes</Link>
-                </Button>
+              </div>
+
+              <div className="mt-6 flex flex-wrap items-start justify-start gap-3 text-sm font-medium">
                 <VehicleFormDialog
                   vehicle={vehicle}
                   trigger={
-                    <Button variant="ghost" size="sm">
-                      <Settings className="h-4 w-4" />
-                    </Button>
+                    <button
+                      type="button"
+                      className="text-primary flex items-center gap-1 font-medium transition-opacity hover:opacity-80"
+                    >
+                      <Edit className="size-4" aria-hidden />
+                      editar
+                    </button>
                   }
                 />
-              </CardFooter>
+
+                <Link
+                  href={`/veiculos/${vehicle.id}`}
+                  className="text-primary flex items-center gap-1 font-medium transition-opacity hover:opacity-80"
+                >
+                  <Eye className="size-4" aria-hidden />
+                  detalhes
+                </Link>
+              </div>
             </Card>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>

@@ -600,6 +600,7 @@ export const veiculos = pgTable("veiculos", {
   color: text("cor"),
   renavam: text("renavam"),
   status: text("status").notNull().default("active"), // active, sold, inactive
+  type: text("type").notNull().default("car"), // car, motorcycle, truck, bus, other
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),

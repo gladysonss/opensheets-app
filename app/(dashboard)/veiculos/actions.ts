@@ -30,6 +30,7 @@ const vehicleSchema = z.object({
   color: z.string().optional().nullable(),
   renavam: z.string().optional().nullable(),
   status: z.enum(["active", "sold", "inactive"]).default("active"),
+  type: z.enum(["car", "motorcycle", "truck", "bus", "other"]).default("car"),
 });
 
 const createVehicleSchema = vehicleSchema;
@@ -181,16 +182,6 @@ export async function createRefuelingAction(
     const period = `${purchaseDate.getFullYear()}-${String(
       purchaseDate.getMonth() + 1
     ).padStart(2, "0")}`;
-
-    // Find or create "Combustível" category?
-    // For now, let's assume the user selects a category or we default to something?
-    // The input doesn't have categoryId. We should probably ask for it or default it.
-    // Let's check if there is a "Combustível" category.
-    // For simplicity, I'll add categoryId to the schema or just leave it null for now.
-    // Ideally, we should pass categoryId.
-
-    // Let's assume we create a lancamento without category for now, or the user should select it.
-    // I'll update the schema to include categoryId optionally.
 
     await db.transaction(async (tx) => {
       const [lancamento] = await tx
