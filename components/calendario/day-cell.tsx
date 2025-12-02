@@ -138,6 +138,11 @@ export function DayCell({ day, onSelect, onCreate }: DayCellProps) {
           )}
         >
           {day.label}
+          <span className="md:hidden text-xs font-normal text-muted-foreground ml-2">
+            {new Date(day.date + "T12:00:00").toLocaleDateString("pt-BR", {
+              weekday: "long",
+            })}
+          </span>
         </span>
         <button
           type="button"

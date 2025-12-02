@@ -315,7 +315,7 @@ export function ImportLancamentosDialog({
             </div>
           ) : (
             <div className="flex flex-col gap-4 h-full min-h-0">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/20 shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 border rounded-lg bg-muted/20 shrink-0">
                 {REQUIRED_FIELDS.map((field) => (
                   <div key={field.key} className="space-y-1">
                     <Label className="text-xs font-semibold text-primary">{field.label} *</Label>

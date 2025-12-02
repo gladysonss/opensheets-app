@@ -17,6 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { getAvatarSrc } from "@/lib/pagadores/utils";
 import {
@@ -52,6 +53,13 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const periodParam = searchParams.get(MONTH_PERIOD_PARAM);
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleLinkClick = React.useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, setOpenMobile]);
 
   const isLinkActive = React.useCallback(
     (url: string) => {
@@ -119,7 +127,11 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
                         isActive={itemIsActive}
                         className={itemIsActive ? activeLinkClasses : ""}
                       >
-                        <Link prefetch href={buildHrefWithPeriod(item.url)}>
+                        <Link
+                          prefetch
+                          href={buildHrefWithPeriod(item.url)}
+                          onClick={handleLinkClick}
+                        >
                           <item.icon className={"h-4 w-4"} />
                           {item.title}
                         </Link>
@@ -158,6 +170,7 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
                                         prefetch
                                         href={buildHrefWithPeriod(subItem.url)}
                                         className="flex items-center gap-2"
+                                        onClick={handleLinkClick}
                                       >
                                         {subItem.icon ? (
                                           <subItem.icon className="size-4" />

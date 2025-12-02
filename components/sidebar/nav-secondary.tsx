@@ -10,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 
@@ -24,6 +25,13 @@ export function NavSecondary({
   }[];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleLinkClick = React.useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  }, [isMobile, setOpenMobile]);
 
   const isLinkActive = React.useCallback(
     (url: string) => {
@@ -60,7 +68,7 @@ export function NavSecondary({
                       : ""
                   }
                 >
-                  <Link prefetch href={item.url}>
+                  <Link prefetch href={item.url} onClick={handleLinkClick}>
                     <item.icon className={"h-4 w-4"} />
                     <span>{item.title}</span>
                   </Link>

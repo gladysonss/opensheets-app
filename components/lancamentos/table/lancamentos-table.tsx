@@ -695,7 +695,7 @@ export function LancamentosTable({
           {onCreate || onMassAdd ? (
             <div className="flex gap-2">
               {onCreate ? (
-                <Button onClick={onCreate} className="w-full sm:w-auto">
+                <Button onClick={onCreate} className="flex-1 sm:w-auto">
                   <RiAddCircleLine className="size-4" />
                   Novo lançamento
                 </Button>
@@ -797,7 +797,15 @@ export function LancamentosTable({
                         {headerGroup.headers.map((header) => (
                           <TableHead
                             key={header.id}
-                            className="whitespace-nowrap"
+                            className={cn(
+                              "whitespace-nowrap",
+                              [
+                                "condition",
+                                "paymentMethod",
+                                "pagadorName",
+                                "contaCartao",
+                              ].includes(header.column.id) && "hidden md:table-cell"
+                            )}
                           >
                             {header.isPlaceholder
                               ? null
@@ -814,7 +822,18 @@ export function LancamentosTable({
                     {rowModel.rows.map((row) => (
                       <TableRow key={row.id}>
                         {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id}>
+                          <TableCell
+                            key={cell.id}
+                            className={cn(
+                              "py-2.5",
+                              [
+                                "condition",
+                                "paymentMethod",
+                                "pagadorName",
+                                "contaCartao",
+                              ].includes(cell.column.id) && "hidden md:table-cell"
+                            )}
+                          >
                             {flexRender(
                               cell.column.columnDef.cell,
                               cell.getContext()
