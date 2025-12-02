@@ -431,28 +431,11 @@ export const lancamentos = pgTable("lancamentos", {
   }),
   seriesId: uuid("series_id"),
   transferId: uuid("transfer_id"),
-});
-
-export const userRelations = relations(user, ({ many, one }) => ({
-  accounts: many(account),
-  sessions: many(session),
-  anotacoes: many(anotacoes),
-  cartoes: many(cartoes),
-  categorias: many(categorias),
-  contas: many(contas),
-  faturas: many(faturas),
-  lancamentos: many(lancamentos),
-  orcamentos: many(orcamentos),
-  pagadores: many(pagadores),
-  installmentAnticipations: many(installmentAnticipations),
-}));
-
-export const accountRelations = relations(account, ({ one }) => ({
-  user: one(user, {
-    fields: [account.userId],
-    references: [user.id],
+  veiculoId: uuid("veiculo_id").references(() => veiculos.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
   }),
-}));
+});
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {
@@ -577,6 +560,10 @@ export const lancamentosRelations = relations(lancamentos, ({ one }) => ({
     fields: [lancamentos.anticipationId],
     references: [installmentAnticipations.id],
   }),
+  veiculo: one(veiculos, {
+    fields: [lancamentos.veiculoId],
+    references: [veiculos.id],
+  }),
 }));
 
 export const installmentAnticipationsRelations = relations(
@@ -601,6 +588,87 @@ export const installmentAnticipationsRelations = relations(
   })
 );
 
+export const veiculos = pgTable("veiculos", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text("nome").notNull(),
+  brand: text("marca"),
+  model: text("modelo"),
+  year: integer("ano"),
+  plate: text("placa"),
+  color: text("cor"),
+  renavam: text("renavam"),
+  status: text("status").notNull().default("active"), // active, sold, inactive
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", {
+    mode: "date",
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
+});
+
+export const abastecimentos = pgTable("abastecimentos", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  veiculoId: uuid("veiculo_id")
+    .notNull()
+    .references(() => veiculos.id, { onDelete: "cascade" }),
+  date: date("data", { mode: "date" }).notNull(),
+  odometer: integer("odometro").notNull(), // Km atual
+  liters: numeric("litros", { precision: 10, scale: 3 }).notNull(),
+  pricePerLiter: numeric("preco_litro", { precision: 10, scale: 3 }).notNull(),
+  totalCost: numeric("valor_total", { precision: 12, scale: 2 }).notNull(),
+  fuelType: text("tipo_combustivel").notNull(), // gasolina, etanol, diesel, gnv, eletrico
+  isFullTank: boolean("tanque_cheio").notNull().default(true),
+  lancamentoId: uuid("lancamento_id").references(() => lancamentos.id, {
+    onDelete: "set null",
+  }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(),
+});
+
+export const veiculosRelations = relations(veiculos, ({ one, many }) => ({
+  user: one(user, {
+    fields: [veiculos.userId],
+    references: [user.id],
+  }),
+  abastecimentos: many(abastecimentos),
+  lancamentos: many(lancamentos),
+}));
+
+export const abastecimentosRelations = relations(abastecimentos, ({ one }) => ({
+  veiculo: one(veiculos, {
+    fields: [abastecimentos.veiculoId],
+    references: [veiculos.id],
+  }),
+  lancamento: one(lancamentos, {
+    fields: [abastecimentos.lancamentoId],
+    references: [lancamentos.id],
+  }),
+  user: one(user, {
+    fields: [abastecimentos.userId],
+    references: [user.id],
+  }),
+}));
+
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
 export type Account = typeof account.$inferSelect;
@@ -617,3 +685,5 @@ export type SavedInsight = typeof savedInsights.$inferSelect;
 export type Lancamento = typeof lancamentos.$inferSelect;
 export type InstallmentAnticipation =
   typeof installmentAnticipations.$inferSelect;
+export type Veiculo = typeof veiculos.$inferSelect;
+export type Abastecimento = typeof abastecimentos.$inferSelect;

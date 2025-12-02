@@ -11,6 +11,7 @@ import {
   RiSettingsLine,
   RiSparklingLine,
   RiTodoLine,
+  RiCarLine,
   type RemixiconComponentType,
 } from "@remixicon/react";
 
@@ -105,6 +106,11 @@ export function createSidebarNavData(pagadores: PagadorLike[]): SidebarNavData {
             title: "Orçamentos",
             url: "/orcamentos",
             icon: RiFundsLine,
+          },
+          {
+            title: "Veículos",
+            url: "/veiculos",
+            icon: RiCarLine,
           },
         ],
       },
