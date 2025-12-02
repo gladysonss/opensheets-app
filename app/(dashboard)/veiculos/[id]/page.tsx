@@ -9,13 +9,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate } from "@/lib/utils/date";
+import { VehiclePerformanceCharts } from "@/components/veiculos/vehicle-performance-charts";
+import MonthPicker from "@/components/month-picker/month-picker";
+import { parsePeriodParam, parsePeriod } from "@/lib/utils/period";
 
 export default async function VehicleDetailsPage({
   params,
+  searchParams,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const vehicle = await getVehicleById(params.id);
+  const { id } = await params;
+  const { periodo } = await searchParams;
+  
+  const { period: periodString } = parsePeriodParam(periodo as string);
+  const { year, month } = parsePeriod(periodString);
+  const periodDate = new Date(year, month - 1, 1);
+
+  const vehicle = await getVehicleById(id, periodDate);
 
   if (!vehicle) {
     notFound();
@@ -49,7 +61,7 @@ export default async function VehicleDetailsPage({
 
   return (
     <div className="space-y-6 px-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">{vehicle.name}</h1>
           <p className="text-muted-foreground">
@@ -57,11 +69,15 @@ export default async function VehicleDetailsPage({
             {vehicle.plate ? ` - ${vehicle.plate}` : ""}
           </p>
         </div>
-        <RefuelingFormDialog
-          veiculoId={vehicle.id}
-          contaOptions={contaOptions}
-          cartaoOptions={cartaoOptions}
-        />
+        <div className="flex items-center gap-2">
+          <MonthPicker />
+          <RefuelingFormDialog
+            veiculoId={vehicle.id}
+            contaOptions={contaOptions}
+            cartaoOptions={cartaoOptions}
+            lastOdometer={vehicle.abastecimentos[0]?.odometer ?? 0}
+          />
+        </div>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
@@ -112,6 +128,8 @@ export default async function VehicleDetailsPage({
               </CardContent>
             </Card>
           </div>
+
+          <VehiclePerformanceCharts abastecimentos={vehicle.abastecimentos} />
         </TabsContent>
         <TabsContent value="refueling">
           <Card>
@@ -121,7 +139,7 @@ export default async function VehicleDetailsPage({
             <CardContent>
               {vehicle.abastecimentos.length === 0 ? (
                 <p className="text-muted-foreground">
-                  Nenhum abastecimento registrado.
+                  Nenhum abastecimento registrado neste mês.
                 </p>
               ) : (
                 <div className="space-y-4">
@@ -160,7 +178,7 @@ export default async function VehicleDetailsPage({
             <CardContent>
               {vehicle.lancamentos.length === 0 ? (
                 <p className="text-muted-foreground">
-                  Nenhuma despesa registrada.
+                  Nenhuma despesa registrada neste mês.
                 </p>
               ) : (
                 <div className="space-y-4">

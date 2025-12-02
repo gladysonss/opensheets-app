@@ -204,8 +204,17 @@ export function addMonthsToPeriod(period: string, offset: number): string {
  * @example
  * formatDate("2024-11-14") // "qui 14 nov"
  */
-export function formatDate(value: string): string {
-  const parsed = parseLocalDateString(value);
+export function formatDate(value: string | Date): string {
+  let parsed: Date;
+
+  if (value instanceof Date) {
+    // If it's a Date object (likely from DB), convert to YYYY-MM-DD string first
+    // to ensure consistent local interpretation via parseLocalDateString
+    const dateString = value.toISOString().split("T")[0];
+    parsed = parseLocalDateString(dateString);
+  } else {
+    parsed = parseLocalDateString(value);
+  }
 
   return new Intl.DateTimeFormat("pt-BR", {
     weekday: "short",

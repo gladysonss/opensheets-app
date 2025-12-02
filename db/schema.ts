@@ -632,7 +632,7 @@ export const abastecimentos = pgTable("abastecimentos", {
   fuelType: text("tipo_combustivel").notNull(), // gasolina, etanol, diesel, gnv, eletrico
   isFullTank: boolean("tanque_cheio").notNull().default(true),
   lancamentoId: uuid("lancamento_id").references(() => lancamentos.id, {
-    onDelete: "set null",
+    onDelete: "cascade",
   }),
   userId: text("user_id")
     .notNull()

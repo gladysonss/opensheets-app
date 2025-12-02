@@ -19,6 +19,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { DecimalInput } from "@/components/ui/decimal-input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -36,6 +39,7 @@ import { Plus, Fuel } from "lucide-react";
 import { uuidSchema } from "@/lib/schemas/common";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { getTodayDateString } from "@/lib/utils/date";
 
 const refuelingSchema = z.object({
   veiculoId: uuidSchema("Veículo"),
@@ -62,9 +66,11 @@ interface Option {
 }
 
 interface RefuelingFormDialogProps {
-  veiculoId: string;
+  veiculoId?: string;
+  vehicleOptions?: Option[];
   contaOptions: Option[];
   cartaoOptions: Option[];
+  lastOdometer?: number;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   trigger?: React.ReactNode;
@@ -72,8 +78,10 @@ interface RefuelingFormDialogProps {
 
 export function RefuelingFormDialog({
   veiculoId,
+  vehicleOptions = [],
   contaOptions,
   cartaoOptions,
+  lastOdometer = 0,
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   trigger,
@@ -87,9 +95,9 @@ export function RefuelingFormDialog({
   const form = useForm<RefuelingFormValues>({
     resolver: zodResolver(refuelingSchema),
     defaultValues: {
-      veiculoId,
-      date: new Date().toISOString().split("T")[0],
-      odometer: 0,
+      veiculoId: veiculoId ?? "",
+      date: getTodayDateString(),
+      odometer: 0, // Start as 0 (empty in UI)
       liters: 0,
       pricePerLiter: 0,
       totalCost: 0,
@@ -103,9 +111,15 @@ export function RefuelingFormDialog({
   const paymentMethod = form.watch("paymentMethod");
 
   function onSubmit(values: RefuelingFormValues) {
+    // If odometer is 0 (empty) and we have a last odometer, use that
+    const payload = { ...values };
+    if (payload.odometer === 0 && lastOdometer > 0) {
+      payload.odometer = lastOdometer;
+    }
+
     startTransition(async () => {
       try {
-        const result = await createRefuelingAction(values);
+        const result = await createRefuelingAction(payload);
 
         if (result.success) {
           toast.success(result.message);
@@ -113,9 +127,9 @@ export function RefuelingFormDialog({
           form.reset({
             veiculoId,
             date: new Date().toISOString().split("T")[0],
-            odometer: values.odometer, // Keep odometer for convenience?
+            odometer: 0, 
             liters: 0,
-            pricePerLiter: values.pricePerLiter, // Keep price for convenience?
+            pricePerLiter: values.pricePerLiter,
             totalCost: 0,
             fuelType: values.fuelType,
             isFullTank: true,
@@ -132,13 +146,6 @@ export function RefuelingFormDialog({
       }
     });
   }
-
-  // Calculate total cost automatically if liters and price are present
-  const liters = form.watch("liters");
-  const pricePerLiter = form.watch("pricePerLiter");
-  
-  // Effect to update total cost? No, better to let user input or use a button.
-  // Or just simple onChange handlers.
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -161,6 +168,35 @@ export function RefuelingFormDialog({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {!veiculoId && vehicleOptions.length > 0 && (
+              <FormField
+                control={form.control}
+                name="veiculoId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Veículo</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o veículo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {vehicleOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -169,7 +205,10 @@ export function RefuelingFormDialog({
                   <FormItem>
                     <FormLabel>Data</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -184,7 +223,9 @@ export function RefuelingFormDialog({
                     <FormControl>
                       <Input
                         type="number"
+                        placeholder={lastOdometer > 0 ? `Último: ${lastOdometer} km` : "0"}
                         {...field}
+                        value={field.value === 0 ? "" : field.value}
                         onChange={(e) => field.onChange(Number(e.target.value))}
                       />
                     </FormControl>
@@ -202,17 +243,18 @@ export function RefuelingFormDialog({
                   <FormItem>
                     <FormLabel>Litros</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.001"
-                        {...field}
-                        onChange={(e) => {
-                            const val = Number(e.target.value);
-                            field.onChange(val);
-                            const price = form.getValues("pricePerLiter");
-                            if (price > 0) {
-                                form.setValue("totalCost", Number((val * price).toFixed(2)));
-                            }
+                      <DecimalInput
+                        value={field.value}
+                        onValueChange={(val) => {
+                          const numVal = Number(val);
+                          field.onChange(numVal);
+                          const price = form.getValues("pricePerLiter");
+                          if (price > 0) {
+                            form.setValue(
+                              "totalCost",
+                              Number((numVal * price).toFixed(2))
+                            );
+                          }
                         }}
                       />
                     </FormControl>
@@ -227,18 +269,20 @@ export function RefuelingFormDialog({
                   <FormItem>
                     <FormLabel>Preço/Litro</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.001"
-                        {...field}
-                        onChange={(e) => {
-                            const val = Number(e.target.value);
-                            field.onChange(val);
-                            const liters = form.getValues("liters");
-                            if (liters > 0) {
-                                form.setValue("totalCost", Number((liters * val).toFixed(2)));
-                            }
+                      <CurrencyInput
+                        value={String(field.value)}
+                        onValueChange={(val) => {
+                          const numVal = Number(val);
+                          field.onChange(numVal);
+                          const liters = form.getValues("liters");
+                          if (liters > 0) {
+                            form.setValue(
+                              "totalCost",
+                              Number((liters * numVal).toFixed(2))
+                            );
+                          }
                         }}
+                        placeholder="R$ 0,00"
                       />
                     </FormControl>
                     <FormMessage />
@@ -252,11 +296,10 @@ export function RefuelingFormDialog({
                   <FormItem>
                     <FormLabel>Total (R$)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      <CurrencyInput
+                        value={String(field.value)}
+                        onValueChange={(val) => field.onChange(Number(val))}
+                        placeholder="R$ 0,00"
                       />
                     </FormControl>
                     <FormMessage />
