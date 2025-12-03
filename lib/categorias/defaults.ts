@@ -20,6 +20,7 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   // Despesas
   { name: "Alimentação", type: "despesa", icon: "RiRestaurant2Line" },
   { name: "Transporte", type: "despesa", icon: "RiBusLine" },
+  { name: "Veiculo", type: "despesa", icon: "RiCarLine" },
   { name: "Moradia", type: "despesa", icon: "RiHomeLine" },
   { name: "Saúde", type: "despesa", icon: "RiStethoscopeLine" },
   { name: "Educação", type: "despesa", icon: "RiBook2Line" },

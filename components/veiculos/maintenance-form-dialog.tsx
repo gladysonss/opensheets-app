@@ -35,6 +35,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { createMaintenanceAction } from "@/app/(dashboard)/veiculos/actions";
 import { getTodayDateString } from "@/lib/utils/date";
 import type { Option } from "@/types/common";
+import { getLastOdometerAction } from "@/app/(dashboard)/veiculos/get-last-odometer";
 
 const maintenanceFormSchema = z.object({
   veiculoId: z.string().min(1, "Selecione um veículo"),
@@ -57,6 +58,7 @@ const maintenanceFormSchema = z.object({
   contaId: z.string().optional(),
   cartaoId: z.string().optional(),
   pagadorId: z.string().optional(),
+  categoriaId: z.string().optional(),
   note: z.string().optional(),
 });
 
@@ -71,6 +73,7 @@ interface MaintenanceFormDialogProps {
   pagadorOptions: Option[];
   defaultVehicleId?: string;
   initialData?: MaintenanceFormValues & { id: string };
+  defaultCategoryId?: string;
 }
 
 export function MaintenanceFormDialog({
@@ -82,6 +85,7 @@ export function MaintenanceFormDialog({
   pagadorOptions,
   defaultVehicleId,
   initialData,
+  defaultCategoryId,
 }: MaintenanceFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastOdometer, setLastOdometer] = useState(0);
@@ -108,11 +112,25 @@ export function MaintenanceFormDialog({
       contaId: initialData?.contaId ?? (accountOptions[0]?.value || ""),
       cartaoId: initialData?.cartaoId ?? "",
       pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+      categoriaId: initialData?.categoriaId ?? defaultCategoryId ?? "",
       note: initialData?.note ?? "",
     },
   });
 
   const selectedVehicleId = form.watch("veiculoId");
+  
+  // Fetch last odometer when vehicle changes
+  useEffect(() => {
+    async function fetchOdometer() {
+      if (selectedVehicleId && !initialData) {
+        const lastOdometer = await getLastOdometerAction(selectedVehicleId);
+        form.setValue("odometer", lastOdometer);
+        setLastOdometer(lastOdometer);
+      }
+    }
+    fetchOdometer();
+  }, [selectedVehicleId, initialData, form]);
+
   const paymentMethod = form.watch("paymentMethod");
   const condition = form.watch("condition");
 
@@ -140,9 +158,12 @@ export function MaintenanceFormDialog({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      const firstVehicle = vehicleOptions[0];
+      const selectedVehicle = defaultVehicleId 
+        ? vehicleOptions.find(v => v.value === defaultVehicleId) 
+        : vehicleOptions[0];
+
       form.reset({
-        veiculoId: initialData?.veiculoId ?? (firstVehicle?.value || defaultVehicleId || ""),
+        veiculoId: initialData?.veiculoId ?? defaultVehicleId ?? (selectedVehicle?.value || ""),
         date: initialData?.date ?? getTodayDateString(),
         odometer: initialData?.odometer ?? 0,
         type: initialData?.type ?? "preventiva",
@@ -161,13 +182,14 @@ export function MaintenanceFormDialog({
         contaId: initialData?.contaId ?? (accountOptions[0]?.value || ""),
         cartaoId: initialData?.cartaoId ?? "",
         pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+        categoriaId: initialData?.categoriaId ?? defaultCategoryId ?? "",
         note: initialData?.note ?? "",
       });
-      if (firstVehicle?.lastOdometer) {
-        setLastOdometer(firstVehicle.lastOdometer);
+      if (selectedVehicle?.lastOdometer) {
+        setLastOdometer(selectedVehicle.lastOdometer);
       }
     }
-  }, [open, defaultVehicleId, accountOptions, pagadorOptions, vehicleOptions, form, initialData]);
+  }, [open, defaultVehicleId, accountOptions, pagadorOptions, vehicleOptions, form, initialData, defaultCategoryId]);
 
   const onSubmit = async (values: MaintenanceFormValues) => {
     setIsSubmitting(true);
@@ -216,33 +238,35 @@ export function MaintenanceFormDialog({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2 -mx-6 max-h-[80vh] overflow-y-auto px-6 pb-1">
             {/* Vehicle Selection */}
-            <FormField
-              control={form.control}
-              name="veiculoId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Veículo *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione o veículo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {vehicleOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!defaultVehicleId && (
+              <FormField
+                control={form.control}
+                name="veiculoId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Veículo *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione o veículo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {vehicleOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <div className="flex w-full flex-col gap-2 md:flex-row">
               {/* Date */}
@@ -647,6 +671,9 @@ export function MaintenanceFormDialog({
                 />
               </div>
             </div>
+
+            {/* Category - Hidden */}
+            <input type="hidden" {...form.register("categoriaId")} />
 
             <div className="flex justify-end gap-2 pt-4">
               <Button

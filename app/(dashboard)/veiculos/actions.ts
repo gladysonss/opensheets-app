@@ -77,6 +77,7 @@ const refuelingSchema = z.object({
     (val) => (val === "" ? null : val),
     uuidSchema("Pagador").optional().nullable()
   ),
+  categoriaId: z.string().optional(),
   note: z.string().optional().nullable(),
 });
 
@@ -252,6 +253,7 @@ export async function createRefuelingAction(
             note: data.note,
             veiculoId: data.veiculoId,
             pagadorId: data.pagadorId,
+            categoriaId: data.categoriaId,
             isSettled: isSettled,
             installmentCount: isParcelado ? installmentTotal : null,
             currentInstallment: isParcelado ? i + 1 : null,
@@ -404,6 +406,7 @@ export async function updateRefuelingAction(
             contaId: data.contaId,
             cartaoId: data.cartaoId,
             pagadorId: data.pagadorId,
+            categoriaId: data.categoriaId,
             note: data.note,
             veiculoId: data.veiculoId,
           })
@@ -458,6 +461,7 @@ const maintenanceSchema = z.object({
     (val) => (val === "" ? null : val),
     uuidSchema("Pagador").optional().nullable()
   ),
+  categoriaId: z.string().optional(),
   note: z.string().optional().nullable(),
 });
 
@@ -543,6 +547,7 @@ export async function createMaintenanceAction(
             contaId: data.contaId,
             cartaoId: data.cartaoId,
             pagadorId: data.pagadorId,
+            categoriaId: data.categoriaId,
             note: data.note,
             veiculoId: data.veiculoId,
             isSettled: isSettled,

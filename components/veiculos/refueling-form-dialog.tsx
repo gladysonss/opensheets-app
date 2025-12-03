@@ -40,6 +40,7 @@ import { uuidSchema } from "@/lib/schemas/common";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { getTodayDateString } from "@/lib/utils/date";
+import { getLastOdometerAction } from "@/app/(dashboard)/veiculos/get-last-odometer";
 
 const refuelingSchema = z.object({
   veiculoId: uuidSchema("Veículo"),
@@ -56,6 +57,7 @@ const refuelingSchema = z.object({
   contaId: z.string().optional(),
   cartaoId: z.string().optional(),
   pagadorId: uuidSchema("Pagador").optional().nullable(),
+  categoriaId: z.string().optional(),
   note: z.string().optional().nullable(),
 });
 
@@ -76,6 +78,7 @@ interface RefuelingFormDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   initialData?: RefuelingFormValues & { id: string };
+  defaultCategoryId?: string;
 }
 
 export function RefuelingFormDialog({
@@ -87,8 +90,8 @@ export function RefuelingFormDialog({
   lastOdometer = 0,
   open: controlledOpen,
   onOpenChange: setControlledOpen,
-  trigger,
   initialData,
+  defaultCategoryId,
 }: RefuelingFormDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const totalInputMode = useRef<"update_price" | "update_liters" | null>(null);
@@ -116,6 +119,7 @@ export function RefuelingFormDialog({
       contaId: initialData?.contaId ?? (contaOptions[0]?.value || ""),
       cartaoId: initialData?.cartaoId ?? "",
       pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+      categoriaId: initialData?.categoriaId ?? defaultCategoryId ?? "",
       note: initialData?.note ?? "",
     },
   });
@@ -138,22 +142,29 @@ export function RefuelingFormDialog({
         contaId: initialData?.contaId ?? (contaOptions[0]?.value || ""),
         cartaoId: initialData?.cartaoId ?? "",
         pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+        categoriaId: initialData?.categoriaId ?? defaultCategoryId ?? "",
         note: initialData?.note ?? "",
       });
     }
-  }, [open, initialData, veiculoId, vehicleOptions, contaOptions, pagadorOptions, form]);
+  }, [open, initialData, veiculoId, vehicleOptions, contaOptions, pagadorOptions, form, defaultCategoryId]);
+
+  const selectedVehicleId = form.watch("veiculoId");
+
+  // Fetch last odometer when vehicle changes
+  useEffect(() => {
+    async function fetchOdometer() {
+      if (selectedVehicleId && !initialData) {
+        const lastOdometer = await getLastOdometerAction(selectedVehicleId);
+        form.setValue("odometer", lastOdometer);
+        setCurrentLastOdometer(lastOdometer);
+      }
+    }
+    fetchOdometer();
+  }, [selectedVehicleId, initialData, form]);
 
   const paymentMethod = form.watch("paymentMethod");
   const condition = form.watch("condition");
-  const selectedVehicleId = form.watch("veiculoId");
 
-  // Update currentLastOdometer when selected vehicle changes
-  useEffect(() => {
-    const selectedVehicle = vehicleOptions.find((v: any) => v.value === selectedVehicleId);
-    if (selectedVehicle) {
-      setCurrentLastOdometer(selectedVehicle.lastOdometer ?? 0);
-    }
-  }, [selectedVehicleId, vehicleOptions]);
 
   function onSubmit(values: RefuelingFormValues) {
     const payload = {
@@ -195,7 +206,7 @@ export function RefuelingFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+
       <DialogContent className="sm:max-w-xl p-6 sm:px-8">
         <DialogHeader>
           <DialogTitle>Novo Abastecimento</DialogTitle>
@@ -628,6 +639,9 @@ export function RefuelingFormDialog({
                 </FormItem>
               )}
             />
+
+            {/* Category - Hidden */}
+            <input type="hidden" {...form.register("categoriaId")} />
 
             <DialogFooter>
               <Button type="submit" disabled={isPending}>

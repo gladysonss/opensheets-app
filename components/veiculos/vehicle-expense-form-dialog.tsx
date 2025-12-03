@@ -56,11 +56,13 @@ type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 interface VehicleExpenseFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vehicleId: string;
+  vehicleId?: string;
+  vehicleName?: string; // Add vehicleName prop
   accountOptions: Option[];
   cardOptions: Option[];
   pagadorOptions: Option[];
   categoryOptions: Option[];
+  vehicleOptions?: Option[];
   defaultCategoryId?: string;
   initialData?: ExpenseFormValues & { id: string };
 }
@@ -69,19 +71,30 @@ export function VehicleExpenseFormDialog({
   open,
   onOpenChange,
   vehicleId,
+  vehicleName,
   accountOptions,
   cardOptions,
   pagadorOptions,
   categoryOptions,
+  vehicleOptions,
   defaultCategoryId,
   initialData,
 }: VehicleExpenseFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Helper to get vehicle name
+  const getVehicleName = (id?: string) => {
+    if (vehicleName) return vehicleName;
+    if (id && vehicleOptions) {
+      return vehicleOptions.find(v => v.value === id)?.label;
+    }
+    return undefined;
+  };
+
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseFormSchema),
     defaultValues: {
-      veiculoId: initialData?.veiculoId ?? vehicleId,
+      veiculoId: initialData?.veiculoId ?? vehicleId ?? (vehicleOptions?.[0]?.value || ""),
       date: initialData?.date ?? getTodayDateString(),
       name: initialData?.name ?? "",
       amount: initialData?.amount ?? 0,
@@ -103,7 +116,7 @@ export function VehicleExpenseFormDialog({
   useEffect(() => {
     if (open) {
       form.reset({
-        veiculoId: initialData?.veiculoId ?? vehicleId,
+        veiculoId: initialData?.veiculoId ?? vehicleId ?? (vehicleOptions?.[0]?.value || ""),
         date: initialData?.date ?? getTodayDateString(),
         name: initialData?.name ?? "",
         amount: initialData?.amount ?? 0,
@@ -117,13 +130,32 @@ export function VehicleExpenseFormDialog({
         note: initialData?.note ?? "",
       });
     }
-  }, [open, vehicleId, accountOptions, pagadorOptions, form, initialData, defaultCategoryId]);
+  }, [open, vehicleId, accountOptions, pagadorOptions, form, initialData, defaultCategoryId, vehicleOptions, vehicleName]);
 
   const onSubmit = async (values: ExpenseFormValues) => {
     setIsSubmitting(true);
     try {
+      let finalName = values.name;
+      const currentVehicleId = values.veiculoId || vehicleId;
+      
+      // Auto-format name for new records: "Outros - [Vehicle] - [Name]"
+      if (!initialData && currentVehicleId) {
+        const vName = getVehicleName(currentVehicleId);
+        if (vName) {
+          // Check if it doesn't already start with the pattern to avoid duplication if user typed it manually
+          // We check for "Outros - VehicleName" to be safe
+          const prefix = `Outros - ${vName} - `;
+          
+          if (!finalName.startsWith("Outros - ")) {
+             finalName = `${prefix}${finalName}`;
+          }
+        }
+      }
+
       const payload = {
         ...values,
+        veiculoId: currentVehicleId, // Ensure veiculoId is set even if field was hidden
+        name: finalName,
         purchaseDate: values.date,
         transactionType: "Despesa" as const,
         installmentCount: values.installmentCount ? parseInt(values.installmentCount) : undefined,
@@ -171,13 +203,46 @@ export function VehicleExpenseFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg p-6 sm:px-8">
+      <DialogContent className="sm:max-w-xl p-6 sm:px-8">
         <DialogHeader>
           <DialogTitle>{initialData ? "Editar Despesa" : "Nova Despesa do Veículo"}</DialogTitle>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 -mx-6 sm:-mx-8 max-h-[80vh] overflow-y-auto px-6 sm:px-8">
+            {/* Vehicle Selection (if not pre-selected via prop) */}
+            {(!vehicleId || vehicleId === "") && vehicleOptions && vehicleOptions.length > 0 && (
+              <FormField
+                control={form.control}
+                name="veiculoId"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel>Veículo</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione o veículo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {vehicleOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {(!vehicleId || vehicleId === "") && (!vehicleOptions || vehicleOptions.length === 0) && (
+               <div className="text-sm text-red-500 mb-4">
+                 Nenhum veículo disponível. Cadastre um veículo primeiro.
+               </div>
+            )}
             
             <div className="flex w-full flex-col gap-4 sm:flex-row">
                 {/* Date */}
@@ -233,34 +298,8 @@ export function VehicleExpenseFormDialog({
               )}
             />
 
-            {/* Category */}
-            <FormField
-              control={form.control}
-              name="categoriaId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a categoria" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {categoryOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Category - Hidden */}
+            <input type="hidden" {...form.register("categoriaId")} />
 
             <div className="border-t pt-4">
               <h3 className="font-medium mb-4">Pagamento</h3>

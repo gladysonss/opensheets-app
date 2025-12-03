@@ -69,6 +69,7 @@ export function VehiclesActions({
         contaOptions={contaOptions}
         cartaoOptions={cartaoOptions}
         pagadorOptions={pagadorOptions}
+        defaultCategoryId={defaultCategoryId}
       />
 
       <MaintenanceFormDialog
@@ -78,12 +79,14 @@ export function VehiclesActions({
         accountOptions={contaOptions}
         cardOptions={cartaoOptions}
         pagadorOptions={pagadorOptions}
+        defaultCategoryId={defaultCategoryId}
       />
 
       <VehicleExpenseFormDialog
         open={expenseDialogOpen}
         onOpenChange={setExpenseDialogOpen}
-        vehicleId="" // No default vehicle selected on main page
+
+        vehicleOptions={vehicleOptions}
         accountOptions={contaOptions}
         cardOptions={cartaoOptions}
         pagadorOptions={pagadorOptions}

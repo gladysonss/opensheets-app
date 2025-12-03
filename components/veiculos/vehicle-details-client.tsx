@@ -32,10 +32,17 @@ import { deleteRefuelingAction, deleteMaintenanceAction } from "@/app/(dashboard
 import { deleteLancamentoAction as deleteLancamentoActionOriginal } from "@/app/(dashboard)/lancamentos/actions";
 import type { Option } from "@/types/common";
 
-import { Plus, Fuel, Wrench, FileText } from "lucide-react";
+import { Plus, Fuel, Wrench, FileText, Filter } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate, formatDateForDb } from "@/lib/utils/date";
 import MonthPicker from "@/components/month-picker/month-picker";
@@ -109,6 +116,7 @@ export function VehicleDetailsClient({
   const [viewMaintenanceId, setViewMaintenanceId] = useState<string | null>(null);
   const [viewExpenseId, setViewExpenseId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{ type: "refueling" | "maintenance" | "expense"; id: string } | null>(null);
+  const [filterType, setFilterType] = useState<"all" | "refueling" | "maintenance" | "expense">("all");
 
   // Derived Data
   const selectedRefueling = vehicle.abastecimentos.find((a) => a.id === selectedRefuelingId);
@@ -279,43 +287,61 @@ export function VehicleDetailsClient({
 
           <TabsContent value="history">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col gap-4 items-start">
                 <CardTitle>Histórico Completo</CardTitle>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 size-4" />
-                      Novo Registro
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedRefuelingId(null);
-                      setRefuelingDialogOpen(true);
-                    }}>
-                      <Fuel className="mr-2 size-4" />
-                      Abastecimento
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedMaintenanceId(null);
-                      setMaintenanceDialogOpen(true);
-                    }}>
-                      <Wrench className="mr-2 size-4" />
-                      Manutenção
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedExpenseId(null);
-                      setExpenseDialogOpen(true);
-                    }}>
-                      <FileText className="mr-2 size-4" />
-                      Outros
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="w-full flex justify-start gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 size-4" />
+                        Novo Registro
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedRefuelingId(null);
+                        setRefuelingDialogOpen(true);
+                      }}>
+                        <Fuel className="mr-2 size-4" />
+                        Abastecimento
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedMaintenanceId(null);
+                        setMaintenanceDialogOpen(true);
+                      }}>
+                        <Wrench className="mr-2 size-4" />
+                        Manutenção
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedExpenseId(null);
+                        setExpenseDialogOpen(true);
+                      }}>
+                        <FileText className="mr-2 size-4" />
+                        Outros
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Select
+                    value={filterType}
+                    onValueChange={(value) => setFilterType(value as any)}
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <Filter className="mr-2 size-4" />
+                      <SelectValue placeholder="Filtrar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="refueling">Abastecimentos</SelectItem>
+                      <SelectItem value="maintenance">Manutenções</SelectItem>
+                      <SelectItem value="expense">Outros</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </CardHeader>
               <CardContent>
                 <VehicleTimelineCard 
-                  items={timelineItems}
+                  items={timelineItems.filter((item) => filterType === "all" || item.type === filterType)}
                   onEdit={handleEditTimelineItem}
                   onDelete={handleDeleteTimelineItem}
                   onView={handleViewTimelineItem}
@@ -381,6 +407,7 @@ export function VehicleDetailsClient({
         contaOptions={contaOptions}
         cartaoOptions={cartaoOptions}
         pagadorOptions={pagadorOptions}
+        defaultCategoryId={defaultCategoryId}
         initialData={
           selectedRefueling
             ? {
@@ -417,6 +444,7 @@ export function VehicleDetailsClient({
         accountOptions={contaOptions}
         cardOptions={cartaoOptions}
         pagadorOptions={pagadorOptions}
+        defaultCategoryId={defaultCategoryId}
         initialData={
           selectedMaintenance
             ? {
@@ -454,6 +482,7 @@ export function VehicleDetailsClient({
           if (!open) setSelectedExpenseId(null);
         }}
         vehicleId={vehicle.id}
+        vehicleName={vehicle.name}
         accountOptions={contaOptions}
         cardOptions={cartaoOptions}
         pagadorOptions={pagadorOptions}
