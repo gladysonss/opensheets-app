@@ -5,6 +5,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { fetchAccountsForUser } from "../contas/data";
 import { fetchCardsForUser } from "../cartoes/data";
 import { fetchPagadoresWithAccess } from "@/lib/pagadores/access";
+import { fetchCategoriesForUser } from "../categorias/data";
 
 export async function getContas() {
   const user = await getUser();
@@ -22,6 +23,12 @@ export async function getPagadores() {
   const user = await getUser();
   const pagadores = await fetchPagadoresWithAccess(user.id);
   return pagadores;
+}
+
+export async function getCategories() {
+  const user = await getUser();
+  const categories = await fetchCategoriesForUser(user.id);
+  return categories;
 }
 
 export async function getVehicles() {

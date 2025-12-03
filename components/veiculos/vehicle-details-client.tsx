@@ -13,17 +13,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MaintenanceTimelineCard } from "@/components/veiculos/maintenance-timeline-card";
-import { MaintenanceDetailsDialog } from "@/components/veiculos/maintenance-details-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { VehicleTimelineCard, type TimelineItem } from "@/components/veiculos/vehicle-timeline-card";
+import { VehicleExpenseDetailsDialog } from "@/components/veiculos/vehicle-expense-details-dialog";
 
 import { RefuelingDetailsDialog } from "@/components/veiculos/refueling-details-dialog";
 import { RefuelingFormDialog } from "@/components/veiculos/refueling-form-dialog";
 import { MaintenanceFormDialog } from "@/components/veiculos/maintenance-form-dialog";
+import { MaintenanceDetailsDialog } from "@/components/veiculos/maintenance-details-dialog";
+import { VehicleExpenseFormDialog } from "@/components/veiculos/vehicle-expense-form-dialog";
+
 import { deleteRefuelingAction, deleteMaintenanceAction } from "@/app/(dashboard)/veiculos/actions";
+import { deleteLancamentoAction as deleteLancamentoActionOriginal } from "@/app/(dashboard)/lancamentos/actions";
 import type { Option } from "@/types/common";
 
+import { Plus, Fuel, Wrench, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDate, formatDateForDb } from "@/lib/utils/date";
 import MonthPicker from "@/components/month-picker/month-picker";
@@ -32,7 +44,6 @@ import { VehicleReportStats } from "@/components/veiculos/vehicle-report-stats";
 import { VehicleMonthlySummaryCard } from "@/components/veiculos/vehicle-monthly-summary-card";
 import { VehicleHistoryCard } from "@/components/veiculos/vehicle-history-card";
 import { VehicleEfficiencyChart } from "@/components/veiculos/vehicle-efficiency-chart";
-import { RefuelingTimelineCard } from "@/components/veiculos/refueling-timeline-card";
 
 interface VehicleDetailsClientProps {
   vehicle: {
@@ -61,6 +72,7 @@ interface VehicleDetailsClientProps {
   contaOptions: Option[];
   cartaoOptions: Option[];
   pagadorOptions: Option[];
+  categoryOptions: Option[];
 }
 
 export function VehicleDetailsClient({
@@ -74,6 +86,7 @@ export function VehicleDetailsClient({
   contaOptions,
   cartaoOptions,
   pagadorOptions,
+  categoryOptions,
 }: VehicleDetailsClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -81,20 +94,43 @@ export function VehicleDetailsClient({
   // Dialog States
   const [refuelingDialogOpen, setRefuelingDialogOpen] = useState(false);
   const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewRefuelingDialogOpen, setViewRefuelingDialogOpen] = useState(false);
   const [viewMaintenanceDialogOpen, setViewMaintenanceDialogOpen] = useState(false);
+  const [viewExpenseDialogOpen, setViewExpenseDialogOpen] = useState(false);
 
   // Selection States
   const [selectedRefuelingId, setSelectedRefuelingId] = useState<string | null>(null);
   const [selectedMaintenanceId, setSelectedMaintenanceId] = useState<string | null>(null);
+  const [selectedExpenseId, setSelectedExpenseId] = useState<string | null>(null);
   const [viewRefuelingId, setViewRefuelingId] = useState<string | null>(null);
+
   const [viewMaintenanceId, setViewMaintenanceId] = useState<string | null>(null);
-  const [itemToDelete, setItemToDelete] = useState<{ type: "refueling" | "maintenance"; id: string } | null>(null);
+  const [viewExpenseId, setViewExpenseId] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ type: "refueling" | "maintenance" | "expense"; id: string } | null>(null);
 
   // Derived Data
   const selectedRefueling = vehicle.abastecimentos.find((a) => a.id === selectedRefuelingId);
   const selectedMaintenance = vehicle.manutencoes.find((m) => m.id === selectedMaintenanceId);
+  
+  // Filter generic expenses (not linked to refueling or maintenance)
+  const maintenanceLancamentoIds = new Set(vehicle.manutencoes.map(m => m.lancamentoId).filter(Boolean));
+  const refuelingLancamentoIds = new Set(vehicle.abastecimentos.map(a => a.lancamentoId).filter(Boolean));
+  
+  const genericExpenses = vehicle.lancamentos.filter(l => 
+    !maintenanceLancamentoIds.has(l.id) && !refuelingLancamentoIds.has(l.id)
+  );
+
+  const selectedExpense = genericExpenses.find(e => e.id === selectedExpenseId);
+  const viewExpense = genericExpenses.find(e => e.id === viewExpenseId);
+
+  // Merge for timeline
+  const timelineItems: TimelineItem[] = [
+    ...vehicle.manutencoes.map(m => ({ ...m, type: "maintenance" as const })),
+    ...genericExpenses.map(e => ({ ...e, type: "expense" as const })),
+    ...vehicle.abastecimentos.map(a => ({ ...a, type: "refueling" as const }))
+  ];
 
   // Sort refueling for view details (to get previous record)
   const sortedRefuelings = [...vehicle.abastecimentos].sort((a, b) => b.odometer - a.odometer);
@@ -136,6 +172,37 @@ export function VehicleDetailsClient({
     setViewMaintenanceDialogOpen(true);
   };
 
+  const handleEditTimelineItem = (item: TimelineItem) => {
+    if (item.type === "maintenance") {
+      setSelectedMaintenanceId(item.id);
+      setMaintenanceDialogOpen(true);
+    } else if (item.type === "refueling") {
+      setSelectedRefuelingId(item.id);
+      setRefuelingDialogOpen(true);
+    } else {
+      setSelectedExpenseId(item.id);
+      setExpenseDialogOpen(true);
+    }
+  };
+
+  const handleDeleteTimelineItem = (item: TimelineItem) => {
+    setItemToDelete({ type: item.type, id: item.id });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleViewTimelineItem = (item: TimelineItem) => {
+    if (item.type === "maintenance") {
+      setViewMaintenanceId(item.id);
+      setViewMaintenanceDialogOpen(true);
+    } else if (item.type === "refueling") {
+      setViewRefuelingId(item.id);
+      setViewRefuelingDialogOpen(true);
+    } else {
+      setViewExpenseId(item.id);
+      setViewExpenseDialogOpen(true);
+    }
+  };
+
   const confirmDelete = () => {
     if (!itemToDelete) return;
 
@@ -144,8 +211,11 @@ export function VehicleDetailsClient({
         let result;
         if (itemToDelete.type === "refueling") {
           result = await deleteRefuelingAction({ id: itemToDelete.id });
-        } else {
+        } else if (itemToDelete.type === "maintenance") {
           result = await deleteMaintenanceAction({ id: itemToDelete.id });
+        } else {
+          // For generic expenses, use the generic delete action
+          result = await deleteLancamentoActionOriginal({ id: itemToDelete.id });
         }
 
         if (result.success) {
@@ -161,6 +231,10 @@ export function VehicleDetailsClient({
       }
     });
   };
+
+  // Find "Veículo" category for default selection
+  const vehicleCategory = categoryOptions.find(c => c.label === "Veículo" || c.label === "Veiculo");
+  const defaultCategoryId = vehicleCategory?.value;
 
   return (
     <>
@@ -179,8 +253,7 @@ export function VehicleDetailsClient({
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="refueling">Abastecimentos</TabsTrigger>
-            <TabsTrigger value="expenses">Despesas</TabsTrigger>
+            <TabsTrigger value="history">Histórico</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="space-y-6">
             
@@ -204,32 +277,48 @@ export function VehicleDetailsClient({
 
           </TabsContent>
 
-          <TabsContent value="refueling">
+          <TabsContent value="history">
             <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Abastecimentos</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Histórico Completo</CardTitle>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 size-4" />
+                      Novo Registro
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => {
+                      setSelectedRefuelingId(null);
+                      setRefuelingDialogOpen(true);
+                    }}>
+                      <Fuel className="mr-2 size-4" />
+                      Abastecimento
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setSelectedMaintenanceId(null);
+                      setMaintenanceDialogOpen(true);
+                    }}>
+                      <Wrench className="mr-2 size-4" />
+                      Manutenção
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setSelectedExpenseId(null);
+                      setExpenseDialogOpen(true);
+                    }}>
+                      <FileText className="mr-2 size-4" />
+                      Outros
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </CardHeader>
               <CardContent>
-                <RefuelingTimelineCard 
-                  abastecimentos={vehicle.abastecimentos} 
-                  onEdit={handleEditRefueling}
-                  onDelete={handleDeleteRefueling}
-                  onView={handleViewRefueling}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="expenses">
-            <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Manutenções e Despesas</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <MaintenanceTimelineCard 
-                  manutencoes={vehicle.manutencoes}
-                  onEdit={handleEditMaintenance}
-                  onDelete={handleDeleteMaintenance}
-                  onView={handleViewMaintenance}
+                <VehicleTimelineCard 
+                  items={timelineItems}
+                  onEdit={handleEditTimelineItem}
+                  onDelete={handleDeleteTimelineItem}
+                  onView={handleViewTimelineItem}
                 />
               </CardContent>
             </Card>
@@ -262,17 +351,22 @@ export function VehicleDetailsClient({
         onDelete={handleDeleteMaintenance}
       />
 
-      {/* Edit Refueling Dialog */}
-      <RefuelingDetailsDialog
-        open={viewRefuelingDialogOpen}
+      {/* View Expense Dialog */}
+      <VehicleExpenseDetailsDialog
+        open={viewExpenseDialogOpen}
         onOpenChange={(open) => {
-          setViewRefuelingDialogOpen(open);
-          if (!open) setViewRefuelingId(null);
+          setViewExpenseDialogOpen(open);
+          if (!open) setViewExpenseId(null);
         }}
-        refueling={viewRefueling}
-        previousRefueling={previousRefueling}
-        onEdit={handleEditRefueling}
-        onDelete={handleDeleteRefueling}
+        expense={viewExpense}
+        onEdit={(id) => {
+          setSelectedExpenseId(id);
+          setExpenseDialogOpen(true);
+        }}
+        onDelete={(id) => {
+          setItemToDelete({ type: "expense", id });
+          setDeleteDialogOpen(true);
+        }}
       />
 
       {/* Edit Refueling Dialog */}
@@ -282,6 +376,7 @@ export function VehicleDetailsClient({
           setRefuelingDialogOpen(open);
           if (!open) setSelectedRefuelingId(null);
         }}
+        veiculoId={vehicle.id}
         vehicleOptions={vehicleOptions}
         contaOptions={contaOptions}
         cartaoOptions={cartaoOptions}
@@ -317,6 +412,7 @@ export function VehicleDetailsClient({
           setMaintenanceDialogOpen(open);
           if (!open) setSelectedMaintenanceId(null);
         }}
+        defaultVehicleId={vehicle.id}
         vehicleOptions={vehicleOptions}
         accountOptions={contaOptions}
         cardOptions={cartaoOptions}
@@ -345,6 +441,40 @@ export function VehicleDetailsClient({
                 cartaoId: selectedMaintenance.lancamento?.cartaoId,
                 pagadorId: selectedMaintenance.lancamento?.pagadorId,
                 note: selectedMaintenance.lancamento?.note,
+              }
+            : undefined
+        }
+      />
+
+      {/* Expense Dialog */}
+      <VehicleExpenseFormDialog
+        open={expenseDialogOpen}
+        onOpenChange={(open) => {
+          setExpenseDialogOpen(open);
+          if (!open) setSelectedExpenseId(null);
+        }}
+        vehicleId={vehicle.id}
+        accountOptions={contaOptions}
+        cardOptions={cartaoOptions}
+        pagadorOptions={pagadorOptions}
+        categoryOptions={categoryOptions}
+        defaultCategoryId={defaultCategoryId}
+        initialData={
+          selectedExpense
+            ? {
+                id: selectedExpense.id,
+                veiculoId: selectedExpense.veiculoId ?? vehicle.id,
+                date: formatDateForDb(new Date(selectedExpense.purchaseDate)),
+                name: selectedExpense.name,
+                amount: Math.abs(Number(selectedExpense.amount)),
+                categoriaId: selectedExpense.categoriaId ?? "",
+                paymentMethod: selectedExpense.paymentMethod,
+                condition: selectedExpense.condition,
+                installmentCount: selectedExpense.installmentCount?.toString(),
+                contaId: selectedExpense.contaId ?? "",
+                cartaoId: selectedExpense.cartaoId ?? "",
+                pagadorId: selectedExpense.pagadorId ?? "",
+                note: selectedExpense.note ?? "",
               }
             : undefined
         }

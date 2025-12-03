@@ -1,4 +1,4 @@
-import { getVehicleById, getContas, getCartoes, getPagadores, getVehicles } from "../data";
+import { getVehicleById, getContas, getCartoes, getPagadores, getVehicles, getCategories } from "../data";
 import { notFound } from "next/navigation";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,17 +42,19 @@ export default async function VehicleDetailsPage({
   }
 
   // Fetch options for dialogs
-  const [contas, cartoes, pagadores, vehicles] = await Promise.all([
+  const [contas, cartoes, pagadores, vehicles, categories] = await Promise.all([
     getContas(),
     getCartoes(),
     getPagadores(),
     getVehicles(),
+    getCategories(),
   ]);
 
-  const contaOptions = contas.map((c) => ({ label: c.name, value: c.id }));
-  const cartaoOptions = cartoes.map((c) => ({ label: c.name, value: c.id }));
-  const pagadorOptions = pagadores.map((p) => ({ label: p.name, value: p.id }));
-  const vehicleOptions = vehicles.map((v) => ({ 
+  const contaOptions = contas.map((c: any) => ({ label: c.name, value: c.id }));
+  const cartaoOptions = cartoes.map((c: any) => ({ label: c.name, value: c.id }));
+  const pagadorOptions = pagadores.map((p: any) => ({ label: p.name, value: p.id }));
+  const categoryOptions = categories.map((c: any) => ({ label: c.name, value: c.id }));
+  const vehicleOptions = vehicles.map((v: any) => ({ 
     label: v.name, 
     value: v.id,
     lastOdometer: v.abastecimentos[0]?.odometer ?? 0
@@ -192,6 +194,7 @@ export default async function VehicleDetailsPage({
       contaOptions={contaOptions}
       cartaoOptions={cartaoOptions}
       pagadorOptions={pagadorOptions}
+      categoryOptions={categoryOptions}
     />
   );
 }

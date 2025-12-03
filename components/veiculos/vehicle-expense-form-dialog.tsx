@@ -1,0 +1,488 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { DatePicker } from "@/components/ui/date-picker";
+import { createLancamentoAction, updateLancamentoAction } from "@/app/(dashboard)/lancamentos/actions";
+import { getTodayDateString } from "@/lib/utils/date";
+import type { Option } from "@/types/common";
+
+const expenseFormSchema = z.object({
+  veiculoId: z.string().min(1, "Veículo não identificado"),
+  date: z.string().min(1, "Informe a data"),
+  name: z.string().min(1, "Informe a descrição"),
+  amount: z.coerce.number().positive("Valor deve ser maior que zero"),
+  categoriaId: z.string().optional(),
+  // Payment fields
+  paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
+  condition: z.string().min(1, "Informe a condição"),
+  installmentCount: z.string().optional(),
+  contaId: z.string().optional(),
+  cartaoId: z.string().optional(),
+  pagadorId: z.string().optional(),
+  note: z.string().optional(),
+});
+
+type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
+
+interface VehicleExpenseFormDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  vehicleId: string;
+  accountOptions: Option[];
+  cardOptions: Option[];
+  pagadorOptions: Option[];
+  categoryOptions: Option[];
+  defaultCategoryId?: string;
+  initialData?: ExpenseFormValues & { id: string };
+}
+
+export function VehicleExpenseFormDialog({
+  open,
+  onOpenChange,
+  vehicleId,
+  accountOptions,
+  cardOptions,
+  pagadorOptions,
+  categoryOptions,
+  defaultCategoryId,
+  initialData,
+}: VehicleExpenseFormDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<ExpenseFormValues>({
+    resolver: zodResolver(expenseFormSchema),
+    defaultValues: {
+      veiculoId: initialData?.veiculoId ?? vehicleId,
+      date: initialData?.date ?? getTodayDateString(),
+      name: initialData?.name ?? "",
+      amount: initialData?.amount ?? 0,
+      categoriaId: initialData?.categoriaId ?? defaultCategoryId ?? "",
+      paymentMethod: initialData?.paymentMethod ?? "Cartão de crédito",
+      condition: initialData?.condition ?? "À vista",
+      installmentCount: initialData?.installmentCount ?? "",
+      contaId: initialData?.contaId ?? (accountOptions[0]?.value || ""),
+      cartaoId: initialData?.cartaoId ?? "",
+      pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+      note: initialData?.note ?? "",
+    },
+  });
+
+  const paymentMethod = form.watch("paymentMethod");
+  const condition = form.watch("condition");
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        veiculoId: initialData?.veiculoId ?? vehicleId,
+        date: initialData?.date ?? getTodayDateString(),
+        name: initialData?.name ?? "",
+        amount: initialData?.amount ?? 0,
+        categoriaId: initialData?.categoriaId ?? defaultCategoryId ?? "",
+        paymentMethod: initialData?.paymentMethod ?? "Cartão de crédito",
+        condition: initialData?.condition ?? "À vista",
+        installmentCount: initialData?.installmentCount ?? "",
+        contaId: initialData?.contaId ?? (accountOptions[0]?.value || ""),
+        cartaoId: initialData?.cartaoId ?? "",
+        pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+        note: initialData?.note ?? "",
+      });
+    }
+  }, [open, vehicleId, accountOptions, pagadorOptions, form, initialData, defaultCategoryId]);
+
+  const onSubmit = async (values: ExpenseFormValues) => {
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        ...values,
+        purchaseDate: values.date,
+        transactionType: "Despesa" as const,
+        installmentCount: values.installmentCount ? parseInt(values.installmentCount) : undefined,
+      };
+
+      let result;
+      if (initialData) {
+        result = await updateLancamentoAction({
+          ...payload,
+          id: initialData.id,
+          veiculoId: payload.veiculoId,
+          categoriaId: payload.categoriaId || undefined,
+          contaId: payload.contaId || undefined,
+          cartaoId: payload.cartaoId || undefined,
+          pagadorId: payload.pagadorId || undefined,
+          note: payload.note || undefined,
+        });
+      } else {
+        result = await createLancamentoAction({
+          ...payload,
+          veiculoId: payload.veiculoId,
+          categoriaId: payload.categoriaId || undefined,
+          contaId: payload.contaId || undefined,
+          cartaoId: payload.cartaoId || undefined,
+          pagadorId: payload.pagadorId || undefined,
+          note: payload.note || undefined,
+        });
+      }
+
+      if (result.success) {
+        toast.success(result.message);
+        onOpenChange(false);
+        if (!initialData) {
+          form.reset();
+        }
+      } else {
+        toast.error(result.error || "Erro ao registrar despesa");
+      }
+    } catch (error) {
+      toast.error("Erro inesperado ao registrar despesa");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg p-6 sm:px-8">
+        <DialogHeader>
+          <DialogTitle>{initialData ? "Editar Despesa" : "Nova Despesa do Veículo"}</DialogTitle>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
+            <div className="flex w-full flex-col gap-4 sm:flex-row">
+                {/* Date */}
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="w-full sm:w-1/2">
+                      <FormLabel>Data *</FormLabel>
+                      <FormControl>
+                        <DatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Amount */}
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => (
+                    <FormItem className="w-full sm:w-1/2">
+                      <FormLabel>Valor *</FormLabel>
+                      <FormControl>
+                        <CurrencyInput
+                          value={String(field.value || 0)}
+                          onValueChange={field.onChange}
+                          placeholder="R$ 0,00"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
+
+            {/* Description */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: IPVA 2025" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Category */}
+            <FormField
+              control={form.control}
+              name="categoriaId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Categoria</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categoryOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-4">Pagamento</h3>
+              <div className="space-y-4">
+                <div className="flex w-full flex-col gap-2 sm:flex-row">
+                  <FormField
+                    control={form.control}
+                    name="condition"
+                    render={({ field }) => (
+                      <FormItem className={condition === "Parcelado" ? "w-full sm:w-1/2" : "w-full"}>
+                        <FormLabel>Condição *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="À vista">À vista</SelectItem>
+                            <SelectItem value="Parcelado">Parcelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {condition === "Parcelado" && (
+                    <FormField
+                      control={form.control}
+                      name="installmentCount"
+                      render={({ field }) => (
+                        <FormItem className="w-full sm:w-1/2">
+                          <FormLabel>Parcelas *</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[...Array(24)].map((_, i) => (
+                                <SelectItem key={i + 2} value={String(i + 2)}>
+                                  {i + 2}x
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                <div className="flex w-full flex-col gap-2 sm:flex-row">
+                  {/* Payment Method */}
+                  <FormField
+                    control={form.control}
+                    name="paymentMethod"
+                    render={({ field }) => (
+                      <FormItem className="w-full sm:w-1/2">
+                        <FormLabel>Forma de Pagamento *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Cartão de crédito">
+                              Cartão de crédito
+                            </SelectItem>
+                            <SelectItem value="Cartão de débito">
+                              Débito
+                            </SelectItem>
+                            <SelectItem value="Pix">Pix</SelectItem>
+                            <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                            <SelectItem value="Boleto">Boleto</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {paymentMethod === "Cartão de crédito" ? (
+                    <FormField
+                      control={form.control}
+                      name="cartaoId"
+                      render={({ field }) => (
+                        <FormItem className="w-full sm:w-1/2">
+                          <FormLabel>Cartão</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {cardOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="contaId"
+                      render={({ field }) => (
+                        <FormItem className="w-full sm:w-1/2">
+                          <FormLabel>Conta / Banco</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {accountOptions.map((option) => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+                </div>
+
+                {/* Payer */}
+                <FormField
+                  control={form.control}
+                  name="pagadorId"
+                  render={({ field }) => (
+                    <FormItem className="w-full">
+                      <FormLabel>Pagador</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {pagadorOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Note */}
+                <FormField
+                  control={form.control}
+                  name="note"
+                  render={({ field }) => (
+                    <FormItem className="w-full">
+                      <FormLabel>Observações</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Observações adicionais" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Salvando..." : initialData ? "Salvar Alterações" : "Salvar Despesa"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}

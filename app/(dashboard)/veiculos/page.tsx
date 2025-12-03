@@ -1,4 +1,4 @@
-import { getVehicles } from "./data";
+import { getVehicles, getCategories } from "./data";
 import { VehicleFormDialog } from "@/components/veiculos/vehicle-form-dialog";
 import { VehiclesActions } from "@/components/veiculos/vehicles-actions";
 import { Card } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default async function VeiculosPage() {
   const user = await getUser();
-  const [vehicles, userContas, userCartoes, userPagadores] = await Promise.all([
+  const [vehicles, userContas, userCartoes, userPagadores, categories] = await Promise.all([
     getVehicles(),
     db.query.contas.findMany({
       where: eq(contas.userId, user.id),
@@ -25,6 +25,7 @@ export default async function VeiculosPage() {
     db.query.pagadores.findMany({
       where: eq(pagadores.userId, user.id),
     }),
+    getCategories(),
   ]);
 
   const contaOptions = userContas.map((c: any) => ({
@@ -44,6 +45,10 @@ export default async function VeiculosPage() {
     label: p.name,
     value: p.id,
   }));
+  const categoryOptions = categories.map((c: any) => ({
+    label: c.name,
+    value: c.id,
+  }));
 
   return (
     <div className="flex flex-col gap-6 w-full px-6">
@@ -54,12 +59,12 @@ export default async function VeiculosPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-row items-center justify-start gap-2">
         <VehicleFormDialog
           trigger={
-            <Button>
+            <Button variant="outline">
               <Plus className="mr-2 h-4 w-4" />
-              Novo veículo
+              Novo Veículo
             </Button>
           }
         />
@@ -68,6 +73,7 @@ export default async function VeiculosPage() {
           contaOptions={contaOptions}
           cartaoOptions={cartaoOptions}
           pagadorOptions={pagadorOptions}
+          categoryOptions={categoryOptions}
         />
       </div>
 

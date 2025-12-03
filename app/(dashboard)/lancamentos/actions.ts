@@ -86,6 +86,7 @@ const baseFields = z.object({
   contaId: uuidSchema("Conta").nullable().optional(),
   cartaoId: uuidSchema("Cartão").nullable().optional(),
   categoriaId: uuidSchema("Categoria").nullable().optional(),
+  veiculoId: uuidSchema("Veículo").nullable().optional(),
   note: noteSchema,
   installmentCount: z.coerce
     .number()
@@ -313,6 +314,7 @@ const buildLancamentoRecords = ({
     isDivided: data.isSplit ?? false,
     userId,
     seriesId,
+    veiculoId: data.veiculoId ?? null,
   };
 
   const resolveSettledValue = (cycleIndex: number) => {
@@ -585,6 +587,7 @@ export async function updateLancamentoAction(
         dueDate: data.dueDate ? parseLocalDateString(data.dueDate) : null,
         boletoPaymentDate: boletoPaymentDateValue,
         period,
+        veiculoId: data.veiculoId ?? null,
       })
       .where(and(eq(lancamentos.id, data.id), eq(lancamentos.userId, user.id)));
 
