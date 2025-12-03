@@ -243,7 +243,7 @@ export function parsePeriodParam(
 
   const [rawMonth, rawYear] = periodParam.split("-");
   const normalizedMonth = normalize(rawMonth);
-  const monthIndex = MONTH_MAP.get(normalizedMonth);
+  const monthIndex = MONTH_MAP.get(normalizedMonth as any);
   const parsedYear = Number.parseInt(rawYear ?? "", 10);
 
   if (monthIndex === undefined || Number.isNaN(parsedYear)) {
@@ -392,4 +392,108 @@ export function createMonthOptions(
   }
 
   return options.sort((a, b) => a.value.localeCompare(b.value));
+}
+// ============================================================================
+// EXTENDED PERIOD HANDLING (Year, Semester, Quarter)
+// ============================================================================
+
+export type PeriodType = "month" | "quarter" | "semester" | "year";
+
+export interface PeriodDateRange {
+  start: Date;
+  end: Date;
+  type: PeriodType;
+}
+
+/**
+ * Determines the type of period string
+ * @param period - Period string (YYYY-MM, YYYY-QX, YYYY-SX, YYYY)
+ */
+export function getPeriodType(period: string): PeriodType {
+  if (/^\d{4}$/.test(period)) return "year";
+  if (/^\d{4}-S[1-2]$/.test(period)) return "semester";
+  if (/^\d{4}-Q[1-4]$/.test(period)) return "quarter";
+  return "month";
+}
+
+/**
+ * Returns the start and end dates for a given period
+ * @param period - Period string
+ */
+export function getPeriodDateRange(period: string): PeriodDateRange {
+  const type = getPeriodType(period);
+  const year = parseInt(period.slice(0, 4));
+  let start: Date;
+  let end: Date;
+
+  switch (type) {
+    case "year":
+      start = new Date(year, 0, 1);
+      end = new Date(year, 11, 31, 23, 59, 59, 999);
+      break;
+    case "semester":
+      const semester = parseInt(period.slice(6));
+      start = new Date(year, (semester - 1) * 6, 1);
+      end = new Date(year, semester * 6, 0, 23, 59, 59, 999);
+      break;
+    case "quarter":
+      const quarter = parseInt(period.slice(6));
+      start = new Date(year, (quarter - 1) * 3, 1);
+      end = new Date(year, quarter * 3, 0, 23, 59, 59, 999);
+      break;
+    case "month":
+    default:
+      const { month } = parsePeriod(period);
+      start = new Date(year, month - 1, 1);
+      end = new Date(year, month, 0, 23, 59, 59, 999);
+      break;
+  }
+
+  return { start, end, type };
+}
+
+/**
+ * Formats a period for display (Extended)
+ */
+export function displayPeriodExtended(period: string): string {
+  const type = getPeriodType(period);
+  const year = period.slice(0, 4);
+
+  switch (type) {
+    case "year":
+      return year;
+    case "semester":
+      return `${period.slice(6)}º Semestre de ${year}`;
+    case "quarter":
+      return `${period.slice(6)}º Trimestre de ${year}`;
+    case "month":
+    default:
+      return displayPeriod(period);
+  }
+}
+
+/**
+ * Extended URL param parser
+ * Handles: "novembro-2024", "2024", "2024-S1", "2024-Q1"
+ */
+export function parsePeriodParamExtended(
+  periodParam: string | null | undefined,
+  referenceDate = new Date()
+): string {
+  if (!periodParam) {
+    return formatPeriod(referenceDate.getFullYear(), referenceDate.getMonth() + 1);
+  }
+
+  // Check for extended formats first
+  if (
+    /^\d{4}$/.test(periodParam) || 
+    /^\d{4}-S[1-2]$/.test(periodParam) || 
+    /^\d{4}-Q[1-4]$/.test(periodParam)
+  ) {
+    return periodParam;
+  }
+
+  // Fallback to existing month parser
+  const { period } = parsePeriodParam(periodParam, referenceDate);
+  return period;
 }

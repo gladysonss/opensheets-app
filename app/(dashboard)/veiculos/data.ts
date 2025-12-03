@@ -24,53 +24,31 @@ export async function getVehicles() {
   return data;
 }
 
-export async function getVehicleById(id: string, period?: Date) {
+export async function getVehicleById(id: string, startDate: Date, endDate: Date) {
   const user = await getUser();
-
-  let startOfMonth: Date | undefined;
-  let endOfMonth: Date | undefined;
-
-  if (period) {
-    startOfMonth = new Date(period.getFullYear(), period.getMonth(), 1);
-    endOfMonth = new Date(period.getFullYear(), period.getMonth() + 1, 0);
-    endOfMonth.setHours(23, 59, 59, 999);
-  }
 
   const data = await db.query.veiculos.findFirst({
     where: and(eq(veiculos.id, id), eq(veiculos.userId, user.id)),
     with: {
       abastecimentos: {
-        where: (abastecimentos, { and, gte, lte }) => 
-          period 
-            ? and(
-                gte(abastecimentos.date, startOfMonth!),
-                lte(abastecimentos.date, endOfMonth!)
-              )
-            : undefined,
         orderBy: [desc(abastecimentos.date)],
-        limit: 50,
       },
       lancamentos: {
         where: (lancamentos, { and, gte, lte }) => 
-          period 
-            ? and(
-                gte(lancamentos.purchaseDate, startOfMonth!),
-                lte(lancamentos.purchaseDate, endOfMonth!)
-              )
-            : undefined,
+          and(
+            gte(lancamentos.purchaseDate, startDate),
+            lte(lancamentos.purchaseDate, endDate)
+          ),
         orderBy: (lancamentos, { desc }) => [desc(lancamentos.purchaseDate)],
-        limit: 50,
+        limit: 100,
       },
       manutencoes: {
         where: (manutencoes, { and, gte, lte }) => 
-          period 
-            ? and(
-                gte(manutencoes.date, startOfMonth!),
-                lte(manutencoes.date, endOfMonth!)
-              )
-            : undefined,
+          and(
+            gte(manutencoes.date, startDate),
+            lte(manutencoes.date, endDate)
+          ),
         orderBy: [desc(manutencoes.date)],
-        limit: 50,
       },
     },
   });
