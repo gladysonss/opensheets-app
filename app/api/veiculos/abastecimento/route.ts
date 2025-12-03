@@ -40,6 +40,66 @@ const refuelingSchema = z.object({
 });
 
 // POST /api/veiculos/abastecimento
+/**
+ * @swagger
+ * /api/veiculos/abastecimento:
+ *   post:
+ *     description: Cria um novo registro de abastecimento e o lançamento financeiro associado.
+ *     tags:
+ *       - Veículos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               veiculoId:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *               odometer:
+ *                 type: number
+ *               liters:
+ *                 type: number
+ *               pricePerLiter:
+ *                 type: number
+ *               totalCost:
+ *                 type: number
+ *               fuelType:
+ *                 type: string
+ *               isFullTank:
+ *                 type: boolean
+ *               paymentMethod:
+ *                 type: string
+ *               condition:
+ *                 type: string
+ *               installmentCount:
+ *                 type: number
+ *               contaId:
+ *                 type: string
+ *               cartaoId:
+ *                 type: string
+ *               pagadorId:
+ *                 type: string
+ *               categoriaId:
+ *                 type: string
+ *               note:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Abastecimento criado com sucesso.
+ *       400:
+ *         description: Dados inválidos.
+ *       401:
+ *         description: Não autorizado.
+ *       404:
+ *         description: Veículo não encontrado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function POST(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);

@@ -1,6 +1,21 @@
 import { NextResponse } from "next/server";
 import { authenticateRequest, handleAuthError } from "@/lib/api-auth";
 
+/**
+ * @swagger
+ * /api/meus-dados:
+ *   get:
+ *     description: Retorna os dados do usuário autenticado.
+ *     tags:
+ *       - Usuário
+ *     responses:
+ *       200:
+ *         description: Dados do usuário retornados com sucesso.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function GET(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);

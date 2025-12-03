@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   devIndicators: {
     position: "bottom-right",
   },
+  transpilePackages: ["swagger-ui-react", "react-syntax-highlighter", "swagger-client"],
 };
 
 export default nextConfig;

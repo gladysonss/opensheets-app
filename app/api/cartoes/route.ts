@@ -3,6 +3,21 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { authenticateRequest, handleAuthError } from "@/lib/api-auth";
 
+/**
+ * @swagger
+ * /api/cartoes:
+ *   get:
+ *     description: Retorna todos os cartões de crédito cadastrados do usuário.
+ *     tags:
+ *       - Cartões
+ *     responses:
+ *       200:
+ *         description: Lista de cartões retornada com sucesso.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function GET(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);

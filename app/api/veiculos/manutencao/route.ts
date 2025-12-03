@@ -43,6 +43,76 @@ const maintenanceSchema = z.object({
 });
 
 // POST /api/veiculos/manutencao
+/**
+ * @swagger
+ * /api/veiculos/manutencao:
+ *   post:
+ *     description: Cria um novo registro de manutenção e o lançamento financeiro associado.
+ *     tags:
+ *       - Veículos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               veiculoId:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *               odometer:
+ *                 type: number
+ *               type:
+ *                 type: string
+ *               serviceName:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               parts:
+ *                 type: string
+ *               laborCost:
+ *                 type: number
+ *               partsCost:
+ *                 type: number
+ *               totalCost:
+ *                 type: number
+ *               workshop:
+ *                 type: string
+ *               nextMaintenanceKm:
+ *                 type: number
+ *               nextMaintenanceDate:
+ *                 type: string
+ *               paymentMethod:
+ *                 type: string
+ *               condition:
+ *                 type: string
+ *               installmentCount:
+ *                 type: number
+ *               contaId:
+ *                 type: string
+ *               cartaoId:
+ *                 type: string
+ *               pagadorId:
+ *                 type: string
+ *               categoriaId:
+ *                 type: string
+ *               note:
+ *                 type: string
+ *               dueDate:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Manutenção criada com sucesso.
+ *       400:
+ *         description: Dados inválidos.
+ *       401:
+ *         description: Não autorizado.
+ *       404:
+ *         description: Veículo não encontrado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function POST(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);

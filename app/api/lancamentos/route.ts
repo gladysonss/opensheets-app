@@ -9,6 +9,60 @@ import { addMonthsToDate, addMonthsToPeriod, parseLocalDateString } from "@/lib/
 import { authenticateRequest, handleAuthError } from "@/lib/api-auth";
 
 // GET /api/lancamentos - Retorna os lançamentos do usuário com filtros
+/**
+ * @swagger
+ * /api/lancamentos:
+ *   get:
+ *     description: Retorna os lançamentos do usuário com filtros opcionais.
+ *     tags:
+ *       - Lançamentos
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Número da página (padrão 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Itens por página (padrão 20)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data inicial (YYYY-MM-DD)
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Data final (YYYY-MM-DD)
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *           enum: [Receita, Despesa, Transferência]
+ *         description: Tipo de transação
+ *       - in: query
+ *         name: contaId
+ *         schema:
+ *           type: string
+ *         description: ID da conta
+ *       - in: query
+ *         name: categoriaId
+ *         schema:
+ *           type: string
+ *         description: ID da categoria
+ *     responses:
+ *       200:
+ *         description: Lista de lançamentos retornada com sucesso.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function GET(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);
@@ -95,6 +149,57 @@ const lancamentoInBulkSchema = z.object({
 const createBulkLancamentosSchema = z.array(lancamentoInBulkSchema).min(1, "A requisição deve conter ao menos um lançamento.");
 
 // POST /api/lancamentos - Cria um ou mais novos lançamentos
+/**
+ * @swagger
+ * /api/lancamentos:
+ *   post:
+ *     description: Cria um ou mais novos lançamentos (Bulk).
+ *     tags:
+ *       - Lançamentos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                 amount:
+ *                   type: number
+ *                 purchaseDate:
+ *                   type: string
+ *                 dueDate:
+ *                   type: string
+ *                 transactionType:
+ *                   type: string
+ *                   enum: [Receita, Despesa, Transferência]
+ *                 pagadorId:
+ *                   type: string
+ *                 contaId:
+ *                   type: string
+ *                 categoriaId:
+ *                   type: string
+ *                 condition:
+ *                   type: string
+ *                 paymentMethod:
+ *                   type: string
+ *                 note:
+ *                   type: string
+ *                 installmentCount:
+ *                   type: number
+ *     responses:
+ *       201:
+ *         description: Lançamentos criados com sucesso.
+ *       400:
+ *         description: Dados inválidos.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function POST(request: Request) {
   try {
     // 1. Autenticação
@@ -249,6 +354,34 @@ const deleteSchema = z.object({
 });
 
 // DELETE /api/lancamentos - Deleta um ou mais lançamentos
+/**
+ * @swagger
+ * /api/lancamentos:
+ *   delete:
+ *     description: Deleta um ou mais lançamentos.
+ *     tags:
+ *       - Lançamentos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Lançamentos deletados com sucesso.
+ *       400:
+ *         description: Dados inválidos.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function DELETE(request: Request) {
   try {
     // 1. Autenticação
@@ -306,6 +439,40 @@ const updateLancamentoSchema = z.object({
 const updateBulkSchema = z.array(updateLancamentoSchema).min(1, "A requisição deve conter ao menos um item para atualizar.");
 
 // PUT /api/lancamentos - Atualiza um ou mais lançamentos
+/**
+ * @swagger
+ * /api/lancamentos:
+ *   put:
+ *     description: Atualiza um ou mais lançamentos (Bulk).
+ *     tags:
+ *       - Lançamentos
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: array
+ *             items:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 amount:
+ *                   type: number
+ *                 purchaseDate:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Lançamentos atualizados com sucesso.
+ *       400:
+ *         description: Dados inválidos.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function PUT(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);

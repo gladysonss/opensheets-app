@@ -4,6 +4,30 @@ import { and, eq, desc } from "drizzle-orm";
 import { authenticateRequest, handleAuthError } from "@/lib/api-auth";
 
 // GET /api/veiculos/[id]/lancamentos - Retorna os lançamentos de um veículo específico
+/**
+ * @swagger
+ * /api/veiculos/{id}/lancamentos:
+ *   get:
+ *     description: Retorna o histórico de despesas (abastecimentos, manutenções, outros) de um veículo específico.
+ *     tags:
+ *       - Veículos
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: ID do veículo (UUID)
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Histórico retornado com sucesso.
+ *       404:
+ *         description: Veículo não encontrado.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

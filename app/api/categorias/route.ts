@@ -3,6 +3,21 @@ import { db, schema } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { authenticateRequest, handleAuthError } from "@/lib/api-auth";
 
+/**
+ * @swagger
+ * /api/categorias:
+ *   get:
+ *     description: Retorna todas as categorias cadastradas do usuário.
+ *     tags:
+ *       - Categorias
+ *     responses:
+ *       200:
+ *         description: Lista de categorias retornada com sucesso.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function GET(request: Request) {
   try {
     const { user, error, status } = await authenticateRequest(request);

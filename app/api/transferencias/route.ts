@@ -28,6 +28,44 @@ const transferApiSchema = z.object({
     .regex(/^\d{4}-\d{2}$/, "O período deve estar no formato YYYY-MM."),
 });
 
+/**
+ * @swagger
+ * /api/transferencias:
+ *   post:
+ *     description: Realiza uma transferência entre contas.
+ *     tags:
+ *       - Transferências
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               origem:
+ *                 type: string
+ *                 description: ID da conta de origem
+ *               destino:
+ *                 type: string
+ *                 description: ID da conta de destino
+ *               valor:
+ *                 type: number
+ *               data:
+ *                 type: string
+ *                 format: date
+ *               periodo:
+ *                 type: string
+ *                 example: "2023-10"
+ *     responses:
+ *       201:
+ *         description: Transferência realizada com sucesso.
+ *       400:
+ *         description: Dados inválidos.
+ *       401:
+ *         description: Não autorizado.
+ *       500:
+ *         description: Erro interno do servidor.
+ */
 export async function POST(request: Request) {
   try {
     const authResult = await authenticateRequest(request);
