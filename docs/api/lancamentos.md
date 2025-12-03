@@ -68,6 +68,41 @@ curl -X POST http://localhost:3000/api/lancamentos \
   ]'
 ```
 
+### Exemplos de Pagamento
+
+#### 1. Pagamento à Vista
+
+```json
+{
+  "name": "Almoço",
+  "amount": 45.00,
+  "purchaseDate": "2023-10-27",
+  "transactionType": "Despesa",
+  "condition": "À vista",
+  "paymentMethod": "Pix",
+  "contaId": "UUID_CONTA",
+  "categoriaId": "UUID_CATEGORIA"
+}
+```
+
+#### 2. Pagamento Parcelado
+
+Para registrar um parcelamento, use `condition: "Parcelado"` e informe o `installmentCount`. O sistema criará automaticamente os lançamentos futuros.
+
+```json
+{
+  "name": "Notebook Novo",
+  "amount": 3000.00,
+  "purchaseDate": "2023-10-27",
+  "transactionType": "Despesa",
+  "condition": "Parcelado",
+  "installmentCount": 10,
+  "paymentMethod": "Cartão de crédito",
+  "cartaoId": "UUID_CARTAO",
+  "categoriaId": "UUID_CATEGORIA"
+}
+```
+
 ---
 
 ## 3. Atualizar Lançamentos (Bulk)
