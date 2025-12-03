@@ -103,6 +103,24 @@ Para registrar um parcelamento, use `condition: "Parcelado"` e informe o `instal
 }
 ```
 
+#### 3. Pagamento com Boleto (com Vencimento)
+
+Para pagamentos em boleto, você pode enviar o campo `dueDate` (Data de Vencimento). Se for parcelado, o sistema calculará os vencimentos futuros automaticamente.
+
+```json
+{
+  "name": "Mensalidade Escola",
+  "amount": 1200.00,
+  "purchaseDate": "2023-10-27",
+  "dueDate": "2023-11-05",
+  "transactionType": "Despesa",
+  "condition": "À vista",
+  "paymentMethod": "Boleto",
+  "contaId": "UUID_CONTA",
+  "categoriaId": "UUID_CATEGORIA"
+}
+```
+
 ---
 
 ## 3. Atualizar Lançamentos (Bulk)

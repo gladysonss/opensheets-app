@@ -78,6 +78,9 @@ const lancamentoInBulkSchema = z.object({
   purchaseDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Formato de 'purchaseDate' inválido. Use YYYY-MM-DD.",
   }),
+  dueDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: "Formato de 'dueDate' inválido. Use YYYY-MM-DD.",
+  }).optional().nullable(),
   transactionType: z.enum(LANCAMENTO_TRANSACTION_TYPES),
   pagadorId: z.string().uuid("ID de pagador inválido.").optional().nullable(),
   contaId: z.string().uuid("ID de conta inválido.").optional().nullable(),
@@ -146,6 +149,7 @@ export async function POST(request: Request) {
         }
 
         const purchaseDateObj = parseLocalDateString(transaction.purchaseDate);
+        const dueDateObj = transaction.dueDate ? parseLocalDateString(transaction.dueDate) : null;
         const year = purchaseDateObj.getFullYear();
         const month = String(purchaseDateObj.getMonth() + 1).padStart(2, '0');
         const initialPeriod = `${year}-${month}`;
@@ -171,6 +175,13 @@ export async function POST(request: Request) {
                 // Lógica de Data
                 const installmentDate = new Date(purchaseDateObj);
                 installmentDate.setMonth(installmentDate.getMonth() + i);
+
+                // Lógica de Data de Vencimento
+                let currentDueDate = null;
+                if (dueDateObj) {
+                    currentDueDate = new Date(dueDateObj);
+                    currentDueDate.setMonth(currentDueDate.getMonth() + i);
+                }
                 
                 // Lógica de Período
                 const pYear = installmentDate.getFullYear();
@@ -188,6 +199,7 @@ export async function POST(request: Request) {
                     userId: user.id,
                     period: period,
                     purchaseDate: installmentDate,
+                    dueDate: currentDueDate,
                     installmentCount: installmentCount,
                     currentInstallment: i + 1,
                     seriesId: seriesId,
@@ -206,6 +218,7 @@ export async function POST(request: Request) {
                 userId: user.id,
                 period: initialPeriod,
                 purchaseDate: purchaseDateObj,
+                dueDate: dueDateObj,
                 installmentCount: null,
                 currentInstallment: null,
                 seriesId: null,
