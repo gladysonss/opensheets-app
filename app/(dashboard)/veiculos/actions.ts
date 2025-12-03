@@ -65,9 +65,18 @@ const refuelingSchema = z.object({
   paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
   condition: z.string().min(1, "Informe a condição"),
   installmentCount: z.number().optional(),
-  contaId: uuidSchema("Conta").optional().nullable(),
-  cartaoId: uuidSchema("Cartão").optional().nullable(),
-  pagadorId: uuidSchema("Pagador").optional().nullable(),
+  contaId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Conta").optional().nullable()
+  ),
+  cartaoId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Cartão").optional().nullable()
+  ),
+  pagadorId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Pagador").optional().nullable()
+  ),
   note: z.string().optional().nullable(),
 });
 
@@ -323,9 +332,93 @@ export async function deleteRefuelingAction(
       }
     });
 
-    revalidateForEntity("veiculos");
     revalidateForEntity("lancamentos");
     return { success: true, message: "Abastecimento removido com sucesso." };
+  } catch (error) {
+    return handleActionError(error);
+  }
+}
+
+export async function updateRefuelingAction(
+  input: UpdateRefuelingInput
+): Promise<ActionResult> {
+  try {
+    const user = await getUser();
+    const data = updateRefuelingSchema.parse(input);
+
+    const existing = await db.query.abastecimentos.findFirst({
+      where: and(
+        eq(abastecimentos.id, data.id),
+        eq(abastecimentos.userId, user.id)
+      ),
+    });
+
+    if (!existing) {
+      return { success: false, error: "Abastecimento não encontrado." };
+    }
+
+    const vehicle = await db.query.veiculos.findFirst({
+      where: and(eq(veiculos.id, data.veiculoId), eq(veiculos.userId, user.id)),
+    });
+
+    if (!vehicle) {
+      return { success: false, error: "Veículo não encontrado." };
+    }
+
+    const purchaseDate = parseLocalDateString(data.date);
+    const period = `${purchaseDate.getFullYear()}-${String(
+      purchaseDate.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+    await db.transaction(async (tx) => {
+      // Update refueling record
+      await tx
+        .update(abastecimentos)
+        .set({
+          veiculoId: data.veiculoId,
+          date: purchaseDate,
+          odometer: data.odometer,
+          liters: formatDecimalForDbRequired(data.liters),
+          pricePerLiter: formatDecimalForDbRequired(data.pricePerLiter),
+          totalCost: formatDecimalForDbRequired(data.totalCost),
+          fuelType: data.fuelType,
+          isFullTank: data.isFullTank,
+        })
+        .where(
+          and(
+            eq(abastecimentos.id, data.id),
+            eq(abastecimentos.userId, user.id)
+          )
+        );
+
+      // Update associated expense if it exists
+      if (existing.lancamentoId) {
+        await tx
+          .update(lancamentos)
+          .set({
+            name: `Abastecimento - ${vehicle.name}`,
+            amount: formatDecimalForDbRequired(data.totalCost * -1),
+            paymentMethod: data.paymentMethod,
+            purchaseDate: purchaseDate,
+            period: period,
+            contaId: data.contaId,
+            cartaoId: data.cartaoId,
+            pagadorId: data.pagadorId,
+            note: data.note,
+            veiculoId: data.veiculoId,
+          })
+          .where(
+            and(
+              eq(lancamentos.id, existing.lancamentoId),
+              eq(lancamentos.userId, user.id)
+            )
+          );
+      }
+    });
+
+    revalidateForEntity("veiculos");
+    revalidateForEntity("lancamentos");
+    return { success: true, message: "Abastecimento atualizado com sucesso." };
   } catch (error) {
     return handleActionError(error);
   }
@@ -353,9 +446,18 @@ const maintenanceSchema = z.object({
   paymentMethod: z.string().min(1, "Informe a forma de pagamento"),
   condition: z.string().min(1, "Informe a condição"),
   installmentCount: z.number().optional(),
-  contaId: uuidSchema("Conta").optional().nullable(),
-  cartaoId: uuidSchema("Cartão").optional().nullable(),
-  pagadorId: uuidSchema("Pagador").optional().nullable(),
+  contaId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Conta").optional().nullable()
+  ),
+  cartaoId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Cartão").optional().nullable()
+  ),
+  pagadorId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Pagador").optional().nullable()
+  ),
   note: z.string().optional().nullable(),
 });
 
@@ -532,8 +634,14 @@ export async function updateMaintenanceAction(
           serviceName: data.serviceName,
           description: data.description,
           parts: data.parts,
-          laborCost: data.laborCost ? formatDecimalForDbRequired(data.laborCost) : null,
-          partsCost: data.partsCost ? formatDecimalForDbRequired(data.partsCost) : null,
+          laborCost:
+            data.laborCost !== null && data.laborCost !== undefined
+              ? formatDecimalForDbRequired(data.laborCost)
+              : null,
+          partsCost:
+            data.partsCost !== null && data.partsCost !== undefined
+              ? formatDecimalForDbRequired(data.partsCost)
+              : null,
           totalCost: formatDecimalForDbRequired(data.totalCost),
           workshop: data.workshop,
           nextMaintenanceKm: data.nextMaintenanceKm,

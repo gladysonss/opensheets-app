@@ -2,6 +2,27 @@ import { db } from "@/lib/db";
 import { getUser } from "@/lib/auth/server";
 import { veiculos, abastecimentos, manutencoes } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { fetchAccountsForUser } from "../contas/data";
+import { fetchCardsForUser } from "../cartoes/data";
+import { fetchPagadoresWithAccess } from "@/lib/pagadores/access";
+
+export async function getContas() {
+  const user = await getUser();
+  const { accounts } = await fetchAccountsForUser(user.id);
+  return accounts;
+}
+
+export async function getCartoes() {
+  const user = await getUser();
+  const { cards } = await fetchCardsForUser(user.id);
+  return cards;
+}
+
+export async function getPagadores() {
+  const user = await getUser();
+  const pagadores = await fetchPagadoresWithAccess(user.id);
+  return pagadores;
+}
 
 export async function getVehicles() {
   const user = await getUser();
@@ -32,6 +53,9 @@ export async function getVehicleById(id: string, startDate: Date, endDate: Date)
     with: {
       abastecimentos: {
         orderBy: [desc(abastecimentos.date)],
+        with: {
+          lancamento: true,
+        },
       },
       lancamentos: {
         where: (lancamentos, { and, gte, lte }) => 

@@ -1,0 +1,377 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MaintenanceTimelineCard } from "@/components/veiculos/maintenance-timeline-card";
+import { MaintenanceDetailsDialog } from "@/components/veiculos/maintenance-details-dialog";
+
+import { RefuelingDetailsDialog } from "@/components/veiculos/refueling-details-dialog";
+import { RefuelingFormDialog } from "@/components/veiculos/refueling-form-dialog";
+import { MaintenanceFormDialog } from "@/components/veiculos/maintenance-form-dialog";
+import { deleteRefuelingAction, deleteMaintenanceAction } from "@/app/(dashboard)/veiculos/actions";
+import type { Option } from "@/types/common";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatCurrency } from "@/lib/utils/currency";
+import { formatDate, formatDateForDb } from "@/lib/utils/date";
+import MonthPicker from "@/components/month-picker/month-picker";
+import { displayPeriod } from "@/lib/utils/period";
+import { VehicleReportStats } from "@/components/veiculos/vehicle-report-stats";
+import { VehicleMonthlySummaryCard } from "@/components/veiculos/vehicle-monthly-summary-card";
+import { VehicleHistoryCard } from "@/components/veiculos/vehicle-history-card";
+import { VehicleEfficiencyChart } from "@/components/veiculos/vehicle-efficiency-chart";
+import { RefuelingTimelineCard } from "@/components/veiculos/refueling-timeline-card";
+
+interface VehicleDetailsClientProps {
+  vehicle: {
+    id: string;
+    name: string;
+    brand: string;
+    model: string;
+    plate: string | null;
+    abastecimentos: any[];
+    manutencoes: any[];
+    lancamentos: any[];
+  };
+  monthlyBreakdown: {
+    total: number;
+    splits: {
+      abastecimento: number;
+      manutencao: number;
+      despesa: number;
+    };
+  };
+  historyData: any[];
+  efficiencyData: any[];
+  sixMonthRefueling: any[];
+  periodString: string;
+  vehicleOptions: Option[];
+  contaOptions: Option[];
+  cartaoOptions: Option[];
+  pagadorOptions: Option[];
+}
+
+export function VehicleDetailsClient({
+  vehicle,
+  monthlyBreakdown,
+  historyData,
+  efficiencyData,
+  sixMonthRefueling,
+  periodString,
+  vehicleOptions,
+  contaOptions,
+  cartaoOptions,
+  pagadorOptions,
+}: VehicleDetailsClientProps) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  // Dialog States
+  const [refuelingDialogOpen, setRefuelingDialogOpen] = useState(false);
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [viewRefuelingDialogOpen, setViewRefuelingDialogOpen] = useState(false);
+  const [viewMaintenanceDialogOpen, setViewMaintenanceDialogOpen] = useState(false);
+
+  // Selection States
+  const [selectedRefuelingId, setSelectedRefuelingId] = useState<string | null>(null);
+  const [selectedMaintenanceId, setSelectedMaintenanceId] = useState<string | null>(null);
+  const [viewRefuelingId, setViewRefuelingId] = useState<string | null>(null);
+  const [viewMaintenanceId, setViewMaintenanceId] = useState<string | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<{ type: "refueling" | "maintenance"; id: string } | null>(null);
+
+  // Derived Data
+  const selectedRefueling = vehicle.abastecimentos.find((a) => a.id === selectedRefuelingId);
+  const selectedMaintenance = vehicle.manutencoes.find((m) => m.id === selectedMaintenanceId);
+
+  // Sort refueling for view details (to get previous record)
+  const sortedRefuelings = [...vehicle.abastecimentos].sort((a, b) => b.odometer - a.odometer);
+  const viewRefuelingIndex = sortedRefuelings.findIndex((a) => a.id === viewRefuelingId);
+  const viewRefueling = viewRefuelingIndex >= 0 ? sortedRefuelings[viewRefuelingIndex] : null;
+  const previousRefueling = viewRefuelingIndex >= 0 ? sortedRefuelings[viewRefuelingIndex + 1] : undefined;
+
+  // Find maintenance for view
+  const viewMaintenance = vehicle.manutencoes.find((m) => m.id === viewMaintenanceId);
+
+  // Handlers
+  const handleEditRefueling = (id: string) => {
+    setSelectedRefuelingId(id);
+    setRefuelingDialogOpen(true);
+  };
+
+  const handleDeleteRefueling = (id: string) => {
+    setItemToDelete({ type: "refueling", id });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleViewRefueling = (id: string) => {
+    setViewRefuelingId(id);
+    setViewRefuelingDialogOpen(true);
+  };
+
+  const handleEditMaintenance = (id: string) => {
+    setSelectedMaintenanceId(id);
+    setMaintenanceDialogOpen(true);
+  };
+
+  const handleDeleteMaintenance = (id: string) => {
+    setItemToDelete({ type: "maintenance", id });
+    setDeleteDialogOpen(true);
+  };
+
+  const handleViewMaintenance = (id: string) => {
+    setViewMaintenanceId(id);
+    setViewMaintenanceDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (!itemToDelete) return;
+
+    startTransition(async () => {
+      try {
+        let result;
+        if (itemToDelete.type === "refueling") {
+          result = await deleteRefuelingAction({ id: itemToDelete.id });
+        } else {
+          result = await deleteMaintenanceAction({ id: itemToDelete.id });
+        }
+
+        if (result.success) {
+          toast.success(result.message);
+          setDeleteDialogOpen(false);
+          setItemToDelete(null);
+          router.refresh();
+        } else {
+          toast.error(result.error ?? "Erro ao excluir registro.");
+        }
+      } catch (error) {
+        toast.error("Erro inesperado ao excluir.");
+      }
+    });
+  };
+
+  return (
+    <>
+      <div className="space-y-6 px-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{vehicle.name}</h1>
+            <p className="text-muted-foreground">
+              {vehicle.brand} {vehicle.model}
+              {vehicle.plate ? ` - ${vehicle.plate}` : ""}
+            </p>
+          </div>
+          <MonthPicker />
+        </div>
+
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+            <TabsTrigger value="refueling">Abastecimentos</TabsTrigger>
+            <TabsTrigger value="expenses">Despesas</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview" className="space-y-6">
+            
+            {/* Top Row: Monthly Summary & History */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <VehicleMonthlySummaryCard 
+                periodLabel={displayPeriod(periodString)}
+                breakdown={monthlyBreakdown}
+              />
+              <VehicleHistoryCard data={historyData} />
+            </div>
+
+            {/* Middle Row: Efficiency Chart & Stats */}
+            <div className="grid gap-6 md:grid-cols-2">
+                <VehicleEfficiencyChart data={efficiencyData} />
+                <VehicleReportStats 
+                abastecimentos={sixMonthRefueling} 
+                periodLabel="Métricas dos últimos 6 meses"
+              />
+            </div>
+
+          </TabsContent>
+
+          <TabsContent value="refueling">
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Abastecimentos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RefuelingTimelineCard 
+                  abastecimentos={vehicle.abastecimentos} 
+                  onEdit={handleEditRefueling}
+                  onDelete={handleDeleteRefueling}
+                  onView={handleViewRefueling}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="expenses">
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Manutenções e Despesas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MaintenanceTimelineCard 
+                  manutencoes={vehicle.manutencoes}
+                  onEdit={handleEditMaintenance}
+                  onDelete={handleDeleteMaintenance}
+                  onView={handleViewMaintenance}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* View Refueling Dialog */}
+      <RefuelingDetailsDialog
+        open={viewRefuelingDialogOpen}
+        onOpenChange={(open) => {
+          setViewRefuelingDialogOpen(open);
+          if (!open) setViewRefuelingId(null);
+        }}
+        refueling={viewRefueling}
+        previousRefueling={previousRefueling}
+        onEdit={handleEditRefueling}
+        onDelete={handleDeleteRefueling}
+      />
+
+      {/* View Maintenance Dialog */}
+      <MaintenanceDetailsDialog
+        open={viewMaintenanceDialogOpen}
+        onOpenChange={(open) => {
+          setViewMaintenanceDialogOpen(open);
+          if (!open) setViewMaintenanceId(null);
+        }}
+        maintenance={viewMaintenance}
+        onEdit={handleEditMaintenance}
+        onDelete={handleDeleteMaintenance}
+      />
+
+      {/* Edit Refueling Dialog */}
+      <RefuelingDetailsDialog
+        open={viewRefuelingDialogOpen}
+        onOpenChange={(open) => {
+          setViewRefuelingDialogOpen(open);
+          if (!open) setViewRefuelingId(null);
+        }}
+        refueling={viewRefueling}
+        previousRefueling={previousRefueling}
+        onEdit={handleEditRefueling}
+        onDelete={handleDeleteRefueling}
+      />
+
+      {/* Edit Refueling Dialog */}
+      <RefuelingFormDialog
+        open={refuelingDialogOpen}
+        onOpenChange={(open) => {
+          setRefuelingDialogOpen(open);
+          if (!open) setSelectedRefuelingId(null);
+        }}
+        vehicleOptions={vehicleOptions}
+        contaOptions={contaOptions}
+        cartaoOptions={cartaoOptions}
+        pagadorOptions={pagadorOptions}
+        initialData={
+          selectedRefueling
+            ? {
+                id: selectedRefueling.id,
+                veiculoId: selectedRefueling.veiculoId,
+                date: formatDateForDb(new Date(selectedRefueling.date)),
+                odometer: selectedRefueling.odometer,
+                liters: Number(selectedRefueling.liters),
+                pricePerLiter: Number(selectedRefueling.pricePerLiter),
+                totalCost: Number(selectedRefueling.totalCost),
+                fuelType: selectedRefueling.fuelType,
+                isFullTank: selectedRefueling.isFullTank,
+                paymentMethod: selectedRefueling.lancamento?.paymentMethod,
+                condition: selectedRefueling.lancamento?.condition,
+                installmentCount: selectedRefueling.lancamento?.installmentCount?.toString(),
+                contaId: selectedRefueling.lancamento?.contaId,
+                cartaoId: selectedRefueling.lancamento?.cartaoId,
+                pagadorId: selectedRefueling.lancamento?.pagadorId,
+                note: selectedRefueling.lancamento?.note,
+              }
+            : undefined
+        }
+      />
+
+      {/* Edit Maintenance Dialog */}
+      <MaintenanceFormDialog
+        open={maintenanceDialogOpen}
+        onOpenChange={(open) => {
+          setMaintenanceDialogOpen(open);
+          if (!open) setSelectedMaintenanceId(null);
+        }}
+        vehicleOptions={vehicleOptions}
+        accountOptions={contaOptions}
+        cardOptions={cartaoOptions}
+        pagadorOptions={pagadorOptions}
+        initialData={
+          selectedMaintenance
+            ? {
+                id: selectedMaintenance.id,
+                veiculoId: selectedMaintenance.veiculoId,
+                date: formatDateForDb(new Date(selectedMaintenance.date)),
+                odometer: selectedMaintenance.odometer,
+                type: selectedMaintenance.type,
+                serviceName: selectedMaintenance.serviceName,
+                description: selectedMaintenance.description,
+                parts: selectedMaintenance.parts,
+                laborCost: Number(selectedMaintenance.laborCost),
+                partsCost: Number(selectedMaintenance.partsCost),
+                totalCost: Number(selectedMaintenance.totalCost),
+                workshop: selectedMaintenance.workshop,
+                nextMaintenanceKm: selectedMaintenance.nextMaintenanceKm,
+                nextMaintenanceDate: selectedMaintenance.nextMaintenanceDate ? formatDateForDb(new Date(selectedMaintenance.nextMaintenanceDate)) : "",
+                paymentMethod: selectedMaintenance.lancamento?.paymentMethod,
+                condition: selectedMaintenance.lancamento?.condition,
+                installmentCount: selectedMaintenance.lancamento?.installmentCount?.toString(),
+                contaId: selectedMaintenance.lancamento?.contaId,
+                cartaoId: selectedMaintenance.lancamento?.cartaoId,
+                pagadorId: selectedMaintenance.lancamento?.pagadorId,
+                note: selectedMaintenance.lancamento?.note,
+              }
+            : undefined
+        }
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o registro
+              e o lançamento financeiro associado.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isPending}
+            >
+              {isPending ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}

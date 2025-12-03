@@ -72,7 +72,7 @@ export function VehicleEfficiencyChart({ data }: VehicleEfficiencyChartProps) {
         {hasData ? (
           <ChartContainer
             config={chartConfig}
-            className="mx-auto flex h-[300px] w-full max-w-full items-center justify-center aspect-auto"
+            className="mx-auto flex h-[300px] w-full max-w-[520px] items-center justify-center aspect-auto"
           >
             <LineChart
               data={data}
@@ -87,7 +87,7 @@ export function VehicleEfficiencyChart({ data }: VehicleEfficiencyChartProps) {
               />
               <YAxis 
                 hide 
-                domain={['dataMin - 2', 'dataMax + 2']} 
+                domain={[0, 'auto']} 
               />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line

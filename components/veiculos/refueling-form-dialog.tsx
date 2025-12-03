@@ -75,7 +75,7 @@ interface RefuelingFormDialogProps {
   lastOdometer?: number;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  trigger?: React.ReactNode;
+  initialData?: RefuelingFormValues & { id: string };
 }
 
 export function RefuelingFormDialog({
@@ -88,6 +88,7 @@ export function RefuelingFormDialog({
   open: controlledOpen,
   onOpenChange: setControlledOpen,
   trigger,
+  initialData,
 }: RefuelingFormDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const totalInputMode = useRef<"update_price" | "update_liters" | null>(null);
@@ -101,23 +102,46 @@ export function RefuelingFormDialog({
   const form = useForm<RefuelingFormValues>({
     resolver: zodResolver(refuelingSchema),
     defaultValues: {
-      veiculoId: veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
-      date: getTodayDateString(),
-      odometer: 0,
-      liters: 0,
-      pricePerLiter: 0,
-      totalCost: 0,
-      fuelType: "Gasolina",
-      isFullTank: true,
-      paymentMethod: "Cartão de crédito",
-      condition: "À vista",
-      installmentCount: "",
-      contaId: contaOptions[0]?.value || "",
-      cartaoId: "",
-      pagadorId: pagadorOptions[0]?.value || "",
-      note: "",
+      veiculoId: initialData?.veiculoId ?? veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
+      date: initialData?.date ?? getTodayDateString(),
+      odometer: initialData?.odometer ?? 0,
+      liters: initialData?.liters ?? 0,
+      pricePerLiter: initialData?.pricePerLiter ?? 0,
+      totalCost: initialData?.totalCost ?? 0,
+      fuelType: initialData?.fuelType ?? "Gasolina",
+      isFullTank: initialData?.isFullTank ?? true,
+      paymentMethod: initialData?.paymentMethod ?? "Cartão de crédito",
+      condition: initialData?.condition ?? "À vista",
+      installmentCount: initialData?.installmentCount ?? "",
+      contaId: initialData?.contaId ?? (contaOptions[0]?.value || ""),
+      cartaoId: initialData?.cartaoId ?? "",
+      pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+      note: initialData?.note ?? "",
     },
   });
+
+  // Reset form when initialData changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        veiculoId: initialData?.veiculoId ?? veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
+        date: initialData?.date ?? getTodayDateString(),
+        odometer: initialData?.odometer ?? 0,
+        liters: initialData?.liters ?? 0,
+        pricePerLiter: initialData?.pricePerLiter ?? 0,
+        totalCost: initialData?.totalCost ?? 0,
+        fuelType: initialData?.fuelType ?? "Gasolina",
+        isFullTank: initialData?.isFullTank ?? true,
+        paymentMethod: initialData?.paymentMethod ?? "Cartão de crédito",
+        condition: initialData?.condition ?? "À vista",
+        installmentCount: initialData?.installmentCount ?? "",
+        contaId: initialData?.contaId ?? (contaOptions[0]?.value || ""),
+        cartaoId: initialData?.cartaoId ?? "",
+        pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+        note: initialData?.note ?? "",
+      });
+    }
+  }, [open, initialData, veiculoId, vehicleOptions, contaOptions, pagadorOptions, form]);
 
   const paymentMethod = form.watch("paymentMethod");
   const condition = form.watch("condition");
@@ -137,35 +161,29 @@ export function RefuelingFormDialog({
       installmentCount: values.installmentCount ? parseInt(values.installmentCount) : undefined,
     };
     
-    // If odometer is 0 (empty) and we have a last odometer, use that
-    if (payload.odometer === 0 && lastOdometer > 0) {
+    // If odometer is 0 (empty) and we have a last odometer, use that (only for create)
+    if (!initialData && payload.odometer === 0 && lastOdometer > 0) {
       payload.odometer = lastOdometer;
     }
 
     startTransition(async () => {
       try {
-        const result = await createRefuelingAction(payload);
+        let result;
+        
+        if (initialData) {
+           // Import dynamically to avoid circular dependencies if any, or just use the action
+           const { updateRefuelingAction } = await import("@/app/(dashboard)/veiculos/actions");
+           result = await updateRefuelingAction({ ...payload, id: initialData.id });
+        } else {
+           result = await createRefuelingAction(payload);
+        }
 
         if (result.success) {
           toast.success(result.message);
           setOpen(false);
-          form.reset({
-            veiculoId: veiculoId ?? (vehicleOptions.length > 0 ? vehicleOptions[0].value : ""),
-            date: getTodayDateString(),
-            odometer: 0, 
-            liters: 0,
-            pricePerLiter: values.pricePerLiter,
-            totalCost: 0,
-            fuelType: values.fuelType,
-            isFullTank: true,
-            paymentMethod: values.paymentMethod,
-            condition: "À vista",
-            installmentCount: "",
-            contaId: values.contaId,
-            cartaoId: values.cartaoId,
-            pagadorId: values.pagadorId,
-            note: "",
-          });
+          if (!initialData) {
+            form.reset();
+          }
         } else {
           toast.error(result.error ?? "Ocorreu um erro ao salvar o abastecimento.");
         }

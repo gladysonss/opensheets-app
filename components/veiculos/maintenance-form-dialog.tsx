@@ -70,6 +70,7 @@ interface MaintenanceFormDialogProps {
   cardOptions: Option[];
   pagadorOptions: Option[];
   defaultVehicleId?: string;
+  initialData?: MaintenanceFormValues & { id: string };
 }
 
 export function MaintenanceFormDialog({
@@ -80,6 +81,7 @@ export function MaintenanceFormDialog({
   cardOptions,
   pagadorOptions,
   defaultVehicleId,
+  initialData,
 }: MaintenanceFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastOdometer, setLastOdometer] = useState(0);
@@ -87,26 +89,26 @@ export function MaintenanceFormDialog({
   const form = useForm<MaintenanceFormValues>({
     resolver: zodResolver(maintenanceFormSchema),
     defaultValues: {
-      veiculoId: vehicleOptions[0]?.value || defaultVehicleId || "",
-      date: getTodayDateString(),
-      odometer: 0,
-      type: "preventiva",
-      serviceName: "",
-      description: "",
-      parts: "",
-      laborCost: 0,
-      partsCost: 0,
-      totalCost: 0,
-      workshop: "",
-      nextMaintenanceKm: undefined,
-      nextMaintenanceDate: "",
-      paymentMethod: "Cartão de crédito",
-      condition: "À vista",
-      installmentCount: "",
-      contaId: accountOptions[0]?.value || "",
-      cartaoId: "",
-      pagadorId: pagadorOptions[0]?.value || "",
-      note: "",
+      veiculoId: initialData?.veiculoId ?? (vehicleOptions[0]?.value || defaultVehicleId || ""),
+      date: initialData?.date ?? getTodayDateString(),
+      odometer: initialData?.odometer ?? 0,
+      type: initialData?.type ?? "preventiva",
+      serviceName: initialData?.serviceName ?? "",
+      description: initialData?.description ?? "",
+      parts: initialData?.parts ?? "",
+      laborCost: initialData?.laborCost ?? 0,
+      partsCost: initialData?.partsCost ?? 0,
+      totalCost: initialData?.totalCost ?? 0,
+      workshop: initialData?.workshop ?? "",
+      nextMaintenanceKm: initialData?.nextMaintenanceKm ?? undefined,
+      nextMaintenanceDate: initialData?.nextMaintenanceDate ?? "",
+      paymentMethod: initialData?.paymentMethod ?? "Cartão de crédito",
+      condition: initialData?.condition ?? "À vista",
+      installmentCount: initialData?.installmentCount ?? "",
+      contaId: initialData?.contaId ?? (accountOptions[0]?.value || ""),
+      cartaoId: initialData?.cartaoId ?? "",
+      pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+      note: initialData?.note ?? "",
     },
   });
 
@@ -140,32 +142,32 @@ export function MaintenanceFormDialog({
     if (open) {
       const firstVehicle = vehicleOptions[0];
       form.reset({
-        veiculoId: firstVehicle?.value || defaultVehicleId || "",
-        date: getTodayDateString(),
-        odometer: 0,
-        type: "preventiva",
-        serviceName: "",
-        description: "",
-        parts: "",
-        laborCost: 0,
-        partsCost: 0,
-        totalCost: 0,
-        workshop: "",
-        nextMaintenanceKm: undefined,
-        nextMaintenanceDate: "",
-        paymentMethod: "Cartão de crédito",
-        condition: "À vista",
-        installmentCount: "",
-        contaId: accountOptions[0]?.value || "",
-        cartaoId: "",
-        pagadorId: pagadorOptions[0]?.value || "",
-        note: "",
+        veiculoId: initialData?.veiculoId ?? (firstVehicle?.value || defaultVehicleId || ""),
+        date: initialData?.date ?? getTodayDateString(),
+        odometer: initialData?.odometer ?? 0,
+        type: initialData?.type ?? "preventiva",
+        serviceName: initialData?.serviceName ?? "",
+        description: initialData?.description ?? "",
+        parts: initialData?.parts ?? "",
+        laborCost: initialData?.laborCost ?? 0,
+        partsCost: initialData?.partsCost ?? 0,
+        totalCost: initialData?.totalCost ?? 0,
+        workshop: initialData?.workshop ?? "",
+        nextMaintenanceKm: initialData?.nextMaintenanceKm ?? undefined,
+        nextMaintenanceDate: initialData?.nextMaintenanceDate ?? "",
+        paymentMethod: initialData?.paymentMethod ?? "Cartão de crédito",
+        condition: initialData?.condition ?? "À vista",
+        installmentCount: initialData?.installmentCount ?? "",
+        contaId: initialData?.contaId ?? (accountOptions[0]?.value || ""),
+        cartaoId: initialData?.cartaoId ?? "",
+        pagadorId: initialData?.pagadorId ?? (pagadorOptions[0]?.value || ""),
+        note: initialData?.note ?? "",
       });
       if (firstVehicle?.lastOdometer) {
         setLastOdometer(firstVehicle.lastOdometer);
       }
     }
-  }, [open, defaultVehicleId, accountOptions, pagadorOptions, vehicleOptions, form]);
+  }, [open, defaultVehicleId, accountOptions, pagadorOptions, vehicleOptions, form, initialData]);
 
   const onSubmit = async (values: MaintenanceFormValues) => {
     setIsSubmitting(true);
@@ -175,15 +177,25 @@ export function MaintenanceFormDialog({
         installmentCount: values.installmentCount ? parseInt(values.installmentCount) : undefined,
       };
 
-      // If odometer is 0 (empty) and we have a last odometer, use that
-      if (payload.odometer === 0 && lastOdometer > 0) {
+      // If odometer is 0 (empty) and we have a last odometer, use that (only for create)
+      if (!initialData && payload.odometer === 0 && lastOdometer > 0) {
         payload.odometer = lastOdometer;
       }
-      const result = await createMaintenanceAction(payload);
+
+      let result;
+      if (initialData) {
+         const { updateMaintenanceAction } = await import("@/app/(dashboard)/veiculos/actions");
+         result = await updateMaintenanceAction({ ...payload, id: initialData.id });
+      } else {
+         result = await createMaintenanceAction(payload);
+      }
+
       if (result.success) {
         toast.success(result.message);
         onOpenChange(false);
-        form.reset();
+        if (!initialData) {
+          form.reset();
+        }
       } else {
         toast.error(result.error || "Erro ao registrar manutenção");
       }
