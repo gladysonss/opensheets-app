@@ -12,7 +12,7 @@ type SiteHeaderProps = {
 
 export function SiteHeader({ notificationsSnapshot }: SiteHeaderProps) {
   return (
-    <header className="border-b flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+    <header className="sticky top-0 z-50 bg-background border-b flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
         <SidebarTrigger className="-ml-1" />
         <div className="ml-auto flex items-center gap-2">

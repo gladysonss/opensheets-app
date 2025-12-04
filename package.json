@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev-env": "tsx scripts/dev.ts",
-    "build": "next build",
+    "build:swagger": "tsx scripts/generate-swagger.ts",
+    "build": "pnpm build:swagger && next build",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

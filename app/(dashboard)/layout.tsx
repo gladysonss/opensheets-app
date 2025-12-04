@@ -2,6 +2,7 @@ import { PrivacyProvider } from "@/components/privacy-provider";
 import { SiteHeader } from "@/components/header-dashboard";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarSwipeGesture } from "@/components/ui/sidebar-swipe-gesture";
 import { getUserSession } from "@/lib/auth/server";
 import { fetchDashboardNotifications } from "@/lib/dashboard/notifications";
 import { fetchPagadoresWithAccess } from "@/lib/pagadores/access";
@@ -48,6 +49,7 @@ export default async function DashboardLayout({
   return (
     <PrivacyProvider>
       <SidebarProvider>
+        <SidebarSwipeGesture />
         <AppSidebar
           user={{ ...session.user, image: session.user.image ?? null }}
           pagadorAvatarUrl={adminPagador?.avatarUrl ?? null}
