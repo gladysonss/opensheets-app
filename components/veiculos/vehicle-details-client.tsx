@@ -289,10 +289,10 @@ export function VehicleDetailsClient({
             <Card>
               <CardHeader className="flex flex-col gap-4 items-start">
                 <CardTitle>Histórico Completo</CardTitle>
-                <div className="w-full flex justify-start gap-2">
+                <div className="w-full flex flex-col sm:flex-row justify-start gap-2">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button>
+                      <Button className="w-full sm:w-auto">
                         <Plus className="mr-2 size-4" />
                         Novo Registro
                       </Button>
@@ -326,7 +326,7 @@ export function VehicleDetailsClient({
                     value={filterType}
                     onValueChange={(value) => setFilterType(value as any)}
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                       <Filter className="mr-2 size-4" />
                       <SelectValue placeholder="Filtrar por" />
                     </SelectTrigger>
