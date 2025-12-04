@@ -103,7 +103,7 @@ export const parseImportFile = async (file: File): Promise<any[]> => {
         const workbook = read(data, { type: "array", codepage: 65001 });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const jsonData = utils.sheet_to_json(sheet);
+        const jsonData = utils.sheet_to_json(sheet, { defval: "" });
         resolve(jsonData);
       } catch (error) {
         reject(error);
@@ -258,7 +258,7 @@ export const detectInstallment = (
 };
 
 export const normalizeInstallments = (value: any): number | undefined => {
-  if (!value) return undefined;
+  if (value === undefined || value === null || value === "") return undefined;
   if (typeof value === "number") return value;
   
   const str = String(value).trim();

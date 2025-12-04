@@ -344,6 +344,20 @@ export function ImportLancamentosDialog({
     }
 
     const processedData = getMappedData();
+    
+    // Validate mappings based on data content
+    const hasDebit = processedData.some(r => r.paymentMethod === "Cartão de débito");
+    if (hasDebit && !mapping.account) {
+      toast.error("Você tem lançamentos no Débito, mas a coluna 'Conta' não foi mapeada. Por favor, selecione a coluna de Conta.");
+      return;
+    }
+
+    const hasInstallments = processedData.some(r => r.condition === "Parcelado" || r.condition === "Recorrente");
+    if (hasInstallments && !mapping.installments) {
+      toast.error("Você tem lançamentos Parcelados ou Recorrentes, mas a coluna 'Total Parcelas' não foi mapeada.");
+      return;
+    }
+
     const validRows = processedData.filter((r: any) => r.isValid);
 
     if (validRows.length === 0) {

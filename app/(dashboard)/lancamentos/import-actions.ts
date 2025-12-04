@@ -90,6 +90,9 @@ async function resolveIds(
     contaId?: string;
   } = {};
 
+  // Debug logging
+  console.log("Resolving IDs for:", names);
+
   if (names.category) {
     const cat = await db.query.categorias.findFirst({
       where: (t, { and, eq, ilike }) =>
@@ -115,10 +118,12 @@ async function resolveIds(
   }
 
   if (names.account) {
+    console.log(`Searching account: "${names.account}" for user: ${userId}`);
     const acc = await db.query.contas.findFirst({
       where: (t, { and, eq, ilike }) =>
         and(eq(t.userId, userId), ilike(t.name, names.account!)),
     });
+    console.log("Found account:", acc);
     if (acc) results.contaId = acc.id;
   }
 
@@ -136,6 +141,7 @@ export async function importLancamentosAction(
     for (const row of rows) {
       // Validate row
       const data = importRowSchema.parse(row);
+      console.log("Processing row:", data);
 
       // Additional validation
       if (data.condition === "Parcelado") {
@@ -155,10 +161,15 @@ export async function importLancamentosAction(
       });
 
       // Specific validations for payment methods
-      if (data.paymentMethod === "Cartão de débito" && !ids.contaId) {
-        throw new Error(
-          `Item "${data.description}": Cartão de débito requer uma conta válida (coluna 'Conta').`
-        );
+      if (data.paymentMethod === "Cartão de débito") {
+        if (!data.account) {
+           throw new Error(`Item "${data.description}": Cartão de débito requer uma conta. Verifique se a coluna 'Conta' está preenchida no arquivo.`);
+        }
+        if (!ids.contaId) {
+          throw new Error(
+            `Item "${data.description}": A conta "${data.account}" não foi encontrada no sistema. Verifique a ortografia em Cadastros > Contas.`
+          );
+        }
       }
 
       if (data.paymentMethod === "Boleto" && !data.dueDate) {
