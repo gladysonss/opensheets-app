@@ -49,6 +49,7 @@ const importRowSchema = z.object({
   }).optional(),
   installments: z.number().int().optional(),
   note: z.string().trim().optional(),
+  dueDate: z.string().trim().optional(),
 });
 
 export type ImportRowInput = z.infer<typeof importRowSchema>;
@@ -153,6 +154,19 @@ export async function importLancamentosAction(
         account: data.account,
       });
 
+      // Specific validations for payment methods
+      if (data.paymentMethod === "Cartão de débito" && !ids.contaId) {
+        throw new Error(
+          `Item "${data.description}": Cartão de débito requer uma conta válida (coluna 'Conta').`
+        );
+      }
+
+      if (data.paymentMethod === "Boleto" && !data.dueDate) {
+        throw new Error(
+          `Item "${data.description}": Boleto requer uma data de vencimento (coluna 'Vencimento').`
+        );
+      }
+
       // Prepare logic vars
       const purchaseDate = parseLocalDateString(data.date);
       const period = resolvePeriod(data.date, data.period);
@@ -192,6 +206,10 @@ export async function importLancamentosAction(
       // For import, we assume "isSettled" is false unless we add a column for it.
       const isSettled = false;
 
+      const dueDate = data.paymentMethod === "Boleto" && data.dueDate 
+        ? parseLocalDateString(data.dueDate) 
+        : null;
+
       if (condition === "Parcelado") {
         const installmentTotal = data.installments!;
         const installmentAmount = splitAmount(totalCents, installmentTotal); // returns array
@@ -209,7 +227,7 @@ export async function importLancamentosAction(
             installmentCount: installmentTotal,
             currentInstallment: i + 1,
             recurrenceCount: null,
-            dueDate: null, // We don't have due date in import yet
+            dueDate: null, // We don't have due date in import yet for installments
             boletoPaymentDate: null,
           });
         }
@@ -250,7 +268,7 @@ export async function importLancamentosAction(
           installmentCount: null,
           currentInstallment: null,
           recurrenceCount: null,
-          dueDate: null,
+          dueDate: dueDate,
           boletoPaymentDate: null,
         });
       }

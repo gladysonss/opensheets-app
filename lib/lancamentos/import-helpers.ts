@@ -20,6 +20,7 @@ export interface ImportRow {
   condição?: any;
   total_parcelas?: any;
   anotacao?: any;
+  vencimento?: any;
   [key: string]: any;
 }
 
@@ -301,6 +302,10 @@ export const validateImportRow = (row: any) => {
     if (!row.installments || row.installments < 2) {
       errors.push("Parcelado requer total de parcelas >= 2");
     }
+  }
+
+  if (row.type === "Transferência") {
+    errors.push("Transferências não podem ser importadas por aqui. Use a área de Contas.");
   }
 
   return errors;

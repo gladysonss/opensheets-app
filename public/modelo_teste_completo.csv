@@ -1,0 +1,9 @@
+Data,Descrição,Valor,Tipo,Categoria,Pagador,Forma de Pagamento,Cartão,Conta,Condição,Total Parcelas,Vencimento,Anotação
+01/01/2025,Compra Dinheiro,50.00,Despesa,Alimentação,João,Dinheiro,,,À vista,,,Teste dinheiro
+02/01/2025,Compra Pix,120.00,Despesa,Lazer,Maria,Pix,,Conta Corrente,À vista,,,Teste pix
+03/01/2025,Compra Crédito à vista,200.00,Despesa,Transporte,João,Cartão de crédito,Nubank,,À vista,,,Teste crédito à vista
+04/01/2025,Compra Débito,80.00,Despesa,Saúde,Maria,Cartão de débito,,Conta Corrente,À vista,,,Teste débito
+05/01/2025,Pagamento Boleto,150.00,Despesa,Contas,João,Boleto,,Conta Corrente,À vista,,10/01/2025,Teste boleto
+06/01/2025,Compra Parcelada 10x,1000.00,Despesa,Eletrônicos,Maria,Cartão de crédito,Nubank,,Parcelado,10,,Teste parcelado
+07/01/2025,Assinatura Recorrente,30.00,Despesa,Serviços,João,Cartão de crédito,Nubank,,Recorrente,12,,Teste recorrente
+08/01/2025,Salário Mensal,5000.00,Receita,Salário,João,Pix,,Conta Corrente,À vista,,,Teste receita pix
