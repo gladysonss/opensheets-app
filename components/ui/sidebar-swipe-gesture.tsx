@@ -12,8 +12,8 @@ export function SidebarSwipeGesture() {
     if (!isMobile) return;
 
     const handleTouchStart = (e: TouchEvent) => {
-      // Only start gesture from the left edge (first 30px)
-      if (e.touches[0].clientX > 30) return;
+      // Only start gesture from the left edge (first 70px) to avoid conflict with back gesture
+      if (e.touches[0].clientX > 150) return;
       
       touchStartX.current = e.touches[0].clientX;
       touchStartY.current = e.touches[0].clientY;
