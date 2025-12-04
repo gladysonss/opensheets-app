@@ -21,6 +21,7 @@ export type LancamentoFormState = {
   pagadorId: string | undefined;
   secondaryPagadorId: string | undefined;
   isSplit: boolean;
+  splitPercentage: number;
   contaId: string | undefined;
   cartaoId: string | undefined;
   categoriaId: string | undefined;
@@ -39,6 +40,7 @@ export type LancamentoFormOverrides = {
   defaultCartaoId?: string | null;
   defaultPaymentMethod?: string | null;
   defaultPurchaseDate?: string | null;
+  defaultSplitPercentage?: number;
 };
 
 /**
@@ -89,6 +91,7 @@ export function buildLancamentoInitialState(
     pagadorId: fallbackPagadorId ?? undefined,
     secondaryPagadorId: undefined,
     isSplit: false,
+    splitPercentage: overrides?.defaultSplitPercentage ?? 50,
     contaId:
       paymentMethod === "Cartão de crédito"
         ? undefined

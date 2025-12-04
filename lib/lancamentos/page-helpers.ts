@@ -15,7 +15,7 @@ import {
 } from "@/lib/lancamentos/constants";
 import { PAGADOR_ROLE_ADMIN, PAGADOR_ROLE_TERCEIRO } from "@/lib/pagadores/constants";
 import type { SQL } from "drizzle-orm";
-import { eq, ilike, or } from "drizzle-orm";
+import { and, eq, ilike, or } from "drizzle-orm";
 
 type PagadorRow = typeof pagadores.$inferSelect;
 type ContaRow = typeof contas.$inferSelect;
@@ -45,6 +45,7 @@ type BaseSluggedOption = {
 type PagadorSluggedOption = BaseSluggedOption & {
   role: string | null;
   avatarUrl: string | null;
+  defaultSplitPercentage: number | null;
 };
 
 type CategoriaSluggedOption = BaseSluggedOption & {
@@ -154,7 +155,8 @@ export const toOption = (
   slug?: string | null,
   avatarUrl?: string | null,
   logo?: string | null,
-  icon?: string | null
+  icon?: string | null,
+  defaultSplitPercentage?: number | null
 ): SelectOption => ({
   value,
   label: normalizeLabel(label),
@@ -164,21 +166,21 @@ export const toOption = (
   avatarUrl: avatarUrl ?? null,
   logo: logo ?? null,
   icon: icon ?? null,
+  defaultSplitPercentage: defaultSplitPercentage ?? null,
 });
 
 export const fetchLancamentoFilterSources = async (userId: string) => {
   const [pagadorRows, contaRows, cartaoRows, categoriaRows] = await Promise.all(
     [
-      db.query.pagadores.findMany({
-        where: eq(pagadores.userId, userId),
-      }),
+      db
+        .select()
+        .from(pagadores)
+        .where(eq(pagadores.userId, userId)),
       db.query.contas.findMany({
-        where: (contas, { eq, and }) =>
-          and(eq(contas.userId, userId), eq(contas.status, "Ativa")),
+        where: and(eq(contas.userId, userId), eq(contas.status, "Ativa")),
       }),
       db.query.cartoes.findMany({
-        where: (cartoes, { eq, and }) =>
-          and(eq(cartoes.userId, userId), eq(cartoes.status, "Ativo")),
+        where: and(eq(cartoes.userId, userId), eq(cartoes.status, "Ativo")),
       }),
       db.query.categorias.findMany({
         where: eq(categorias.userId, userId),
@@ -212,6 +214,7 @@ export const buildSluggedFilters = ({
       slug: pagadorSlugger(label),
       role: pagador.role ?? null,
       avatarUrl: pagador.avatarUrl ?? null,
+      defaultSplitPercentage: pagador.defaultSplitPercentage ?? null,
     };
   });
 
@@ -367,7 +370,7 @@ export const buildLancamentoWhere = ({
       or(
         ilike(lancamentos.name, searchPattern),
         ilike(lancamentos.note, searchPattern)
-      )
+      )!
     );
   }
 
@@ -442,8 +445,8 @@ export const buildOptionSets = ({
   limitContaId?: string;
 }): LancamentoOptionSets => {
   const pagadorOptions = sortByLabel(
-    pagadorFiltersRaw.map(({ id, label, role, slug, avatarUrl }) =>
-      toOption(id, label, role, undefined, slug, avatarUrl)
+    pagadorFiltersRaw.map(({ id, label, role, slug, avatarUrl, defaultSplitPercentage }) =>
+      toOption(id, label, role, undefined, slug, avatarUrl, undefined, undefined, defaultSplitPercentage)
     )
   );
 

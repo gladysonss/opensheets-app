@@ -65,6 +65,7 @@ export default async function Page() {
       sharedByEmail: pagador.sharedByEmail ?? null,
       shareId: pagador.shareId ?? null,
       shareCode: pagador.canEdit ? pagador.shareCode ?? null : null,
+      defaultSplitPercentage: pagador.defaultSplitPercentage ?? 50,
     }))
     .sort((a, b) => {
       // Admin sempre primeiro

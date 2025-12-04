@@ -1,3 +1,4 @@
+// Force recompile
 import * as schema from "@/db/schema";
 import { drizzle, type PgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";

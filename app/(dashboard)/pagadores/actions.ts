@@ -19,11 +19,7 @@ import { revalidatePath } from "next/cache";
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 
-const statusEnum = z.enum(PAGADOR_STATUS_OPTIONS as [string, ...string[]], {
-  errorMap: () => ({
-    message: "Selecione um status válido.",
-  }),
-});
+const statusEnum = z.enum(PAGADOR_STATUS_OPTIONS as [string, ...string[]]);
 
 const baseSchema = z.object({
   name: z
@@ -40,6 +36,11 @@ const baseSchema = z.object({
   note: noteSchema,
   avatarUrl: z.string().trim().optional(),
   isAutoSend: z.boolean().optional().default(false),
+  defaultSplitPercentage: z.coerce
+    .number()
+    .min(0, "A porcentagem deve ser no mínimo 0.")
+    .max(100, "A porcentagem deve ser no máximo 100.")
+    .default(50),
 });
 
 const createSchema = baseSchema;
@@ -67,8 +68,8 @@ const shareCodeRegenerateSchema = z.object({
   pagadorId: uuidSchema("Pagador"),
 });
 
-type CreateInput = z.infer<typeof createSchema>;
-type UpdateInput = z.infer<typeof updateSchema>;
+type CreateInput = z.input<typeof createSchema>;
+type UpdateInput = z.input<typeof updateSchema>;
 type DeleteInput = z.infer<typeof deleteSchema>;
 type ShareDeleteInput = z.infer<typeof shareDeleteSchema>;
 type ShareCodeJoinInput = z.infer<typeof shareCodeJoinSchema>;
@@ -96,6 +97,7 @@ export async function createPagadorAction(
       note: data.note,
       avatarUrl: normalizeAvatarPath(data.avatarUrl) ?? DEFAULT_PAGADOR_AVATAR,
       isAutoSend: data.isAutoSend ?? false,
+      defaultSplitPercentage: data.defaultSplitPercentage,
       role: PAGADOR_ROLE_TERCEIRO,
       shareCode: generateShareCode(),
       userId: user.id,
@@ -137,6 +139,7 @@ export async function updatePagadorAction(
         avatarUrl:
           normalizeAvatarPath(data.avatarUrl) ?? existing.avatarUrl ?? null,
         isAutoSend: data.isAutoSend ?? false,
+        defaultSplitPercentage: data.defaultSplitPercentage,
         role: existing.role ?? PAGADOR_ROLE_TERCEIRO,
       })
       .where(and(eq(pagadores.id, data.id), eq(pagadores.userId, user.id)));
@@ -317,7 +320,6 @@ export async function regeneratePagadorShareCodeAction(
         if (
           error instanceof Error &&
           "constraint" in error &&
-          // @ts-expect-error constraint is present in postgres errors
           error.constraint === "pagadores_share_code_key"
         ) {
           attempts += 1;

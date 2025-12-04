@@ -17,9 +17,10 @@ export async function fetchPagadoresWithAccess(
   userId: string
 ): Promise<PagadorWithAccess[]> {
   const [owned, shared] = await Promise.all([
-    db.query.pagadores.findMany({
-      where: eq(pagadores.userId, userId),
-    }),
+    db
+      .select()
+      .from(pagadores)
+      .where(eq(pagadores.userId, userId)),
     db
       .select({
         shareId: pagadorShares.id,

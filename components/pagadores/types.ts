@@ -15,6 +15,7 @@ export type Pagador = {
   sharedByEmail?: string | null;
   shareId?: string | null;
   shareCode?: string | null;
+  defaultSplitPercentage: number;
 };
 
 export type PagadorFormValues = {
@@ -24,4 +25,5 @@ export type PagadorFormValues = {
   avatarUrl: string;
   note: string;
   isAutoSend: boolean;
+  defaultSplitPercentage: number;
 };

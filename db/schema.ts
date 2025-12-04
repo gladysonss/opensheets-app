@@ -160,6 +160,9 @@ export const pagadores = pgTable(
     note: text("anotacao"),
     role: text("role"),
     isAutoSend: boolean("is_auto_send").notNull().default(false),
+    defaultSplitPercentage: integer("default_split_percentage")
+      .notNull()
+      .default(50),
     shareCode: text("share_code")
       .notNull()
       .default(sql`substr(encode(gen_random_bytes(24), 'base64'), 1, 24)`),

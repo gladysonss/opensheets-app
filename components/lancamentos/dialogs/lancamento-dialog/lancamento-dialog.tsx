@@ -71,11 +71,19 @@ export function LancamentoDialog({
     onOpenChange
   );
 
+  const initialSplitPercentage = useMemo(() => {
+    if (lancamento) return 50; // Or keep existing if editing? Actually existing logic in buildLancamentoInitialState handles existing lancamento.
+    // But for new ones, we want the default from the payer.
+    const pagador = pagadorOptions.find((p) => p.value === defaultPagadorId);
+    return pagador?.defaultSplitPercentage ?? 50;
+  }, [lancamento, defaultPagadorId, pagadorOptions]);
+
   const [formState, setFormState] = useState<FormState>(() =>
     buildLancamentoInitialState(lancamento, defaultPagadorId, defaultPeriod, {
       defaultCartaoId,
       defaultPaymentMethod,
       defaultPurchaseDate,
+      defaultSplitPercentage: initialSplitPercentage,
     })
   );
   const [periodDirty, setPeriodDirty] = useState(false);
@@ -93,6 +101,7 @@ export function LancamentoDialog({
             defaultCartaoId,
             defaultPaymentMethod,
             defaultPurchaseDate,
+            defaultSplitPercentage: initialSplitPercentage,
           }
         )
       );
@@ -107,6 +116,7 @@ export function LancamentoDialog({
     defaultCartaoId,
     defaultPaymentMethod,
     defaultPurchaseDate,
+    initialSplitPercentage,
   ]);
 
   const primaryPagador = formState.pagadorId;
@@ -143,14 +153,24 @@ export function LancamentoDialog({
           periodDirty
         );
 
+        let updates: Partial<FormState> = {};
+
+        if (key === "secondaryPagadorId") {
+          const selectedPagador = splitPagadorOptions.find((p) => p.value === value);
+          if (selectedPagador?.defaultSplitPercentage !== undefined && selectedPagador.defaultSplitPercentage !== null) {
+             updates.splitPercentage = selectedPagador.defaultSplitPercentage;
+          }
+        }
+
         return {
           ...prev,
           [key]: value,
           ...dependencies,
+          ...updates,
         };
       });
     },
-    [periodDirty]
+    [periodDirty, pagadorOptions]
   );
 
   const handleSubmit = useCallback(
@@ -211,6 +231,9 @@ export function LancamentoDialog({
           ? formState.secondaryPagadorId
           : undefined,
         isSplit: formState.isSplit,
+        splitPercentage: formState.isSplit
+          ? formState.splitPercentage
+          : undefined,
         contaId: formState.contaId,
         cartaoId: formState.cartaoId,
         categoriaId: formState.categoriaId,

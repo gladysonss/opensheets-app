@@ -57,6 +57,13 @@
       "when": 1764691617202,
       "tag": "0007_clumsy_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1764875430684,
+      "tag": "0008_marvelous_smiling_tiger",
+      "breakpoints": true
     }
   ]
 }

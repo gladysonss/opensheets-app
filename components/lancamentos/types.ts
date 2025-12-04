@@ -43,6 +43,7 @@ export type SelectOption = {
   avatarUrl?: string | null;
   logo?: string | null;
   icon?: string | null;
+  defaultSplitPercentage?: number | null;
 };
 
 export type LancamentoFilterOption = {

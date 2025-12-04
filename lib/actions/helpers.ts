@@ -29,7 +29,7 @@ export const revalidateConfig = {
   contas: ["/contas", "/lancamentos"],
   categorias: ["/categorias"],
   orcamentos: ["/orcamentos"],
-  pagadores: ["/pagadores"],
+  pagadores: ["/pagadores", "/lancamentos"],
   anotacoes: ["/anotacoes"],
   lancamentos: ["/lancamentos", "/contas"],
   veiculos: ["/veiculos", "/lancamentos"],

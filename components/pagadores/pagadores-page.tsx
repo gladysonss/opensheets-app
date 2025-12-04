@@ -147,7 +147,7 @@ export function PagadoresPage({
               value={shareCodeInput}
               onChange={(event) => setShareCodeInput(event.target.value)}
               disabled={joinPending}
-              className="w-56"
+              className="w-full sm:w-56"
             />
             <Button type="submit" disabled={joinPending}>
               {joinPending ? "Adicionando..." : "Adicionar por código"}

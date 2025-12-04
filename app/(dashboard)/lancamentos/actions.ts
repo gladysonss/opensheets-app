@@ -83,6 +83,7 @@ const baseFields = z.object({
   pagadorId: uuidSchema("Pagador").nullable().optional(),
   secondaryPagadorId: uuidSchema("Pagador secundário").optional(),
   isSplit: z.boolean().optional().default(false),
+  splitPercentage: z.number().min(0).max(100).optional().default(50),
   contaId: uuidSchema("Conta").nullable().optional(),
   cartaoId: uuidSchema("Cartão").nullable().optional(),
   categoriaId: uuidSchema("Categoria").nullable().optional(),
@@ -249,18 +250,22 @@ const buildShares = ({
   pagadorId,
   isSplit,
   secondaryPagadorId,
+  splitPercentage = 50,
 }: {
   totalCents: number;
   pagadorId: string | null;
   isSplit: boolean;
   secondaryPagadorId?: string;
+  splitPercentage?: number;
 }): Share[] => {
   if (isSplit) {
     if (!pagadorId || !secondaryPagadorId) {
       throw new Error("Configuração de divisão inválida para o lançamento.");
     }
 
-    const [primaryAmount, secondaryAmount] = splitAmount(totalCents, 2);
+    const secondaryAmount = Math.round((totalCents * splitPercentage) / 100);
+    const primaryAmount = totalCents - secondaryAmount;
+
     return [
       { pagadorId, amountCents: primaryAmount },
       { pagadorId: secondaryPagadorId, amountCents: secondaryAmount },
@@ -450,6 +455,7 @@ export async function createLancamentoAction(
       pagadorId: data.pagadorId ?? null,
       isSplit: data.isSplit ?? false,
       secondaryPagadorId: data.secondaryPagadorId,
+      splitPercentage: data.splitPercentage,
     });
 
     const isSeriesLancamento =
