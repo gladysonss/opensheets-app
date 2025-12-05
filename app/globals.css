@@ -3,7 +3,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --spacing-custom-height-1: 28rem;
+  --spacing-custom-height-1: 29rem;
 }
 
 :root {
@@ -74,7 +74,6 @@
   --shadow-xl: 0 20px 25px -5px oklch(35% 0.02 45 / 0.1),
     0 8px 10px -6px oklch(35% 0.02 45 / 0.08);
   --shadow-2xl: 0 25px 50px -12px oklch(35% 0.02 45 / 0.2);
-
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
@@ -106,7 +105,7 @@
 
   /* Muted - subtle surface variant */
   --muted: oklch(20% 0.004 285);
-  --muted-foreground: oklch(60% 0.003 285);
+  --muted-foreground: oklch(72.285% 0.00436 286.016);
 
   /* Accent - subtle highlight */
   --accent: oklch(26% 0.006 285);
@@ -230,7 +229,7 @@
 
   html {
     scroll-behavior: smooth;
-    scroll-padding-top: 80px; /* Offset para o header sticky */
+    scroll-padding-top: 80px;
   }
 
   body {

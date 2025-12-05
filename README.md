@@ -215,8 +215,8 @@ Esta é a **melhor opção para desenvolvedores** que vão modificar o código.
 1. **Clone o repositório**
 
    ```bash
-   git clone https://github.com/felipegcoutinho/opensheets.git
-   cd opensheets
+   git clone https://github.com/felipegcoutinho/opensheets-app.git
+   cd opensheets-app
    ```
 
 2. **Instale as dependências**
@@ -299,8 +299,8 @@ Ideal para quem quer apenas **usar a aplicação** sem mexer no código.
 1. **Clone o repositório**
 
    ```bash
-   git clone https://github.com/felipegcoutinho/opensheets.git
-   cd opensheets
+   git clone https://github.com/felipegcoutinho/opensheets-app.git
+   cd opensheets-app
    ```
 
 2. **Configure as variáveis de ambiente**
@@ -811,7 +811,7 @@ Contribuições são muito bem-vindas!
 1. **Fork** o projeto
 2. **Clone** seu fork
    ```bash
-   git clone https://github.com/seu-usuario/opensheets.git
+   git clone https://github.com/seu-usuario/opensheets-app.git
    ```
 3. **Crie uma branch** para sua feature
    ```bash
@@ -855,7 +855,7 @@ Este projeto é open source e está disponível sob a [Licença MIT](LICENSE).
 
 **Desenvolvido por:** Felipe Coutinho
 **GitHub:** [@felipegcoutinho](https://github.com/felipegcoutinho)
-**Repositório:** [opensheets](https://github.com/felipegcoutinho/opensheets)
+**Repositório:** [opensheets](https://github.com/felipegcoutinho/opensheets-app)
 
 ---
 

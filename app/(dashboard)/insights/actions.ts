@@ -384,7 +384,7 @@ async function aggregateMonthData(userId: string, period: string) {
 
   // Análise de gastos parcelados
   const installmentTransactions = last3MonthsTransactions.filter(
-    tx => tx.condition === "parcelado" && tx.installmentCount && tx.installmentCount > 1
+    tx => tx.condition === "Parcelado" && tx.installmentCount && tx.installmentCount > 1
   );
 
   const installmentData = installmentTransactions
