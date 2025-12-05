@@ -26,8 +26,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function Page() {
-  redirect("/login");
   const session = await getOptionalUserSession();
+
+  if (session?.user) {
+    redirect("/dashboard");
+  } else {
+    redirect("/login");
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -91,7 +96,7 @@ export default async function Page() {
       <section className="relative py-16 md:py-24 lg:py-32">
         <div className="container">
           <div className="mx-auto flex max-w-5xl flex-col items-center text-center gap-6">
-            <Badge variant="primary" className="mb-2">
+            <Badge className="mb-2">
               <RiGithubFill size={14} className="mr-1" />
               Projeto Open Source
             </Badge>
@@ -177,7 +182,7 @@ export default async function Page() {
         <div className="container">
           <div className="mx-auto max-w-5xl">
             <div className="text-center mb-12">
-              <Badge variant="primary" className="mb-4">
+              <Badge className="mb-4">
                 O que tem aqui
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
@@ -316,7 +321,7 @@ export default async function Page() {
         <div className="container">
           <div className="mx-auto max-w-5xl">
             <div className="text-center mb-12">
-              <Badge variant="primary" className="mb-4">
+              <Badge className="mb-4">
                 Stack técnica
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
@@ -422,7 +427,7 @@ export default async function Page() {
         <div className="container">
           <div className="mx-auto max-w-3xl">
             <div className="text-center mb-12">
-              <Badge variant="primary" className="mb-4">
+              <Badge className="mb-4">
                 Como usar
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
