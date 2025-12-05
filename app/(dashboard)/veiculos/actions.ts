@@ -77,7 +77,10 @@ const refuelingSchema = z.object({
     (val) => (val === "" ? null : val),
     uuidSchema("Pagador").optional().nullable()
   ),
-  categoriaId: z.string().optional(),
+  categoriaId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Categoria").optional().nullable()
+  ),
   note: z.string().optional().nullable(),
 });
 
@@ -461,7 +464,10 @@ const maintenanceSchema = z.object({
     (val) => (val === "" ? null : val),
     uuidSchema("Pagador").optional().nullable()
   ),
-  categoriaId: z.string().optional(),
+  categoriaId: z.preprocess(
+    (val) => (val === "" ? null : val),
+    uuidSchema("Categoria").optional().nullable()
+  ),
   note: z.string().optional().nullable(),
 });
 
