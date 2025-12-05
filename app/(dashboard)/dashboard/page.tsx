@@ -32,7 +32,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <main className="flex flex-col gap-4 px-6">
       <DashboardWelcome name={user.name} />
-      <MonthPicker />
+      <MonthPicker serverDate={new Date()} />
       <SectionCards metrics={data.metrics} />
       <DashboardGrid data={data} period={selectedPeriod} />
     </main>

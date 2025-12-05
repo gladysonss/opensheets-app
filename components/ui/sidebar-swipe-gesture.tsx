@@ -13,7 +13,7 @@ export function SidebarSwipeGesture() {
 
     const handleTouchStart = (e: TouchEvent) => {
       // Only start gesture from the left edge (first 70px) to avoid conflict with back gesture
-      if (e.touches[0].clientX > 150) return;
+      if (e.touches[0].clientX > 100) return;
       
       touchStartX.current = e.touches[0].clientX;
       touchStartY.current = e.touches[0].clientY;

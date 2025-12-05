@@ -10,7 +10,11 @@ import NavigationButton from "./nav-button";
 import ReturnButton from "./return-button";
 import { MonthYearPicker } from "./month-year-picker";
 
-export default function MonthPicker() {
+interface MonthPickerProps {
+  serverDate?: Date;
+}
+
+export default function MonthPicker({ serverDate }: MonthPickerProps) {
   const {
     monthNames,
     currentMonth,
@@ -18,7 +22,7 @@ export default function MonthPicker() {
     defaultMonth,
     defaultYear,
     buildHref,
-  } = useMonthPeriod();
+  } = useMonthPeriod(serverDate);
 
   const router = useRouter();
   const [isPending, startTransition] = useTransition();

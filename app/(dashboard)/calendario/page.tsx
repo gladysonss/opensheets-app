@@ -36,7 +36,7 @@ export default async function Page({ searchParams }: PageProps) {
 
   return (
     <main className="flex flex-col gap-3">
-      <MonthPicker />
+      <MonthPicker serverDate={new Date()} />
       <MonthlyCalendar
         period={calendarPeriod}
         events={calendarData.events}

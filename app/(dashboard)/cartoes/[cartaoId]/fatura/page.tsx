@@ -135,7 +135,7 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   return (
     <main className="flex flex-col gap-6">
-      <MonthPicker />
+      <MonthPicker serverDate={new Date()} />
 
       <section className="flex flex-col gap-4">
         <InvoiceSummaryCard

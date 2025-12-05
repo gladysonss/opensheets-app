@@ -177,7 +177,14 @@ export default async function Page({ params, searchParams }: PageProps) {
   } else {
     effectiveSluggedFilters = {
       pagadorFiltersRaw: [
-        { id: pagador.id, label: pagador.name, slug: pagador.id, role: pagador.role },
+        {
+          id: pagador.id,
+          label: pagador.name,
+          slug: pagador.id,
+          role: pagador.role,
+          avatarUrl: pagador.avatarUrl,
+          defaultSplitPercentage: null,
+        },
       ],
       categoriaFiltersRaw: [],
       contaFiltersRaw: [],
@@ -218,7 +225,7 @@ export default async function Page({ params, searchParams }: PageProps) {
     periodLabel,
     totalExpenses: monthlyBreakdown.totalExpenses,
     paymentSplits: monthlyBreakdown.paymentSplits,
-    cardUsage: cardUsage.slice(0, 3).map((item) => ({
+    cardUsage: cardUsage.slice(0, 3).map((item: { name: string; amount: number }) => ({
       name: item.name,
       amount: item.amount,
     })),
@@ -234,7 +241,7 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   return (
     <main className="flex flex-col gap-6">
-      <MonthPicker />
+      <MonthPicker serverDate={new Date()} />
 
       <Tabs defaultValue="profile" className="w-full">
         <TabsList className="mb-2">
@@ -290,6 +297,7 @@ export default async function Page({ params, searchParams }: PageProps) {
               contaCartaoFilterOptions={optionSets.contaCartaoFilterOptions}
               selectedPeriod={selectedPeriod}
               allowCreate={canEdit}
+              estabelecimentos={[]}
             />
           </section>
         </TabsContent>

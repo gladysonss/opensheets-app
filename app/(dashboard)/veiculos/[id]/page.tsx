@@ -1,18 +1,6 @@
 import { getVehicleById, getContas, getCartoes, getPagadores, getVehicles, getCategories } from "../data";
 import { notFound } from "next/navigation";
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency } from "@/lib/utils/currency";
-import { formatDate } from "@/lib/utils/date";
-
-import MonthPicker from "@/components/month-picker/month-picker";
-import { parsePeriodParam, parsePeriod, formatPeriod, displayPeriod, formatMonthLabel } from "@/lib/utils/period";
-import { VehicleReportStats } from "@/components/veiculos/vehicle-report-stats";
-import { VehicleMonthlySummaryCard } from "@/components/veiculos/vehicle-monthly-summary-card";
-import { VehicleHistoryCard } from "@/components/veiculos/vehicle-history-card";
-import { VehicleEfficiencyChart } from "@/components/veiculos/vehicle-efficiency-chart";
-import { RefuelingTimelineCard } from "@/components/veiculos/refueling-timeline-card";
+import { parsePeriodParam, parsePeriod, formatPeriod, formatMonthLabel } from "@/lib/utils/period";
 import { VehicleDetailsClient } from "@/components/veiculos/vehicle-details-client";
 
 export default async function VehicleDetailsPage({

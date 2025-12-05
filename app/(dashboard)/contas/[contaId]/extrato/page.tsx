@@ -120,7 +120,7 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   return (
     <main className="flex flex-col gap-6">
-      <MonthPicker />
+      <MonthPicker serverDate={new Date()} />
 
       <AccountStatementCard
         accountName={account.name}
@@ -166,6 +166,7 @@ export default async function Page({ params, searchParams }: PageProps) {
           contaCartaoFilterOptions={contaCartaoFilterOptions}
           selectedPeriod={selectedPeriod}
           allowCreate={false}
+          estabelecimentos={[]}
         />
       </section>
     </main>
