@@ -34,6 +34,13 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { createLancamentoAction, updateLancamentoAction } from "@/app/(dashboard)/lancamentos/actions";
 import { getTodayDateString } from "@/lib/utils/date";
 import type { Option } from "@/types/common";
+import {
+  ConditionSelectContent,
+  ContaCartaoSelectContent,
+  PagadorSelectContent,
+  PaymentMethodSelectContent,
+} from "@/components/lancamentos/select-items";
+
 
 const expenseFormSchema = z.object({
   veiculoId: z.string().min(1, "Veículo não identificado"),
@@ -251,7 +258,7 @@ export function VehicleExpenseFormDialog({
                   name="date"
                   render={({ field }) => (
                     <FormItem className="w-full sm:w-1/2">
-                      <FormLabel>Data *</FormLabel>
+                      <FormLabel>Data</FormLabel>
                       <FormControl>
                         <DatePicker
                           value={field.value}
@@ -269,7 +276,7 @@ export function VehicleExpenseFormDialog({
                   name="amount"
                   render={({ field }) => (
                     <FormItem className="w-full sm:w-1/2">
-                      <FormLabel>Valor *</FormLabel>
+                      <FormLabel>Valor</FormLabel>
                       <FormControl>
                         <CurrencyInput
                           value={String(field.value || 0)}
@@ -289,7 +296,7 @@ export function VehicleExpenseFormDialog({
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição *</FormLabel>
+                  <FormLabel>Descrição</FormLabel>
                   <FormControl>
                     <Input placeholder="Ex: IPVA 2025" {...field} />
                   </FormControl>
@@ -302,64 +309,51 @@ export function VehicleExpenseFormDialog({
             <input type="hidden" {...form.register("categoriaId")} />
 
             <div className="border-t pt-4">
-              <h3 className="font-medium mb-4">Pagamento</h3>
-              <div className="space-y-4">
-                <div className="flex w-full flex-col gap-2 sm:flex-row">
-                  <FormField
-                    control={form.control}
-                    name="condition"
-                    render={({ field }) => (
-                      <FormItem className={condition === "Parcelado" ? "w-full sm:w-1/2" : "w-full"}>
-                        <FormLabel>Condição *</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="À vista">À vista</SelectItem>
-                            <SelectItem value="Parcelado">Parcelado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {condition === "Parcelado" && (
-                    <FormField
-                      control={form.control}
-                      name="installmentCount"
-                      render={({ field }) => (
-                        <FormItem className="w-full sm:w-1/2">
-                          <FormLabel>Parcelas *</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {[...Array(24)].map((_, i) => (
-                                <SelectItem key={i + 2} value={String(i + 2)}>
-                                  {i + 2}x
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+              <div className="space-y-2">
+                {/* Payer */}
+                <FormField
+                  control={form.control}
+                  name="pagadorId"
+                  render={({ field }) => (
+                    <FormItem className="w-full">
+                      <FormLabel>Pagador</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione">
+                              {field.value &&
+                                (() => {
+                                  const selectedOption = pagadorOptions.find(
+                                    (opt) => opt.value === field.value
+                                  );
+                                  return selectedOption ? (
+                                    <PagadorSelectContent
+                                      label={selectedOption.label}
+                                      avatarUrl={selectedOption.avatarUrl}
+                                    />
+                                  ) : null;
+                                })()}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {pagadorOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <PagadorSelectContent
+                                label={option.label}
+                                avatarUrl={option.avatarUrl}
+                              />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </div>
+                />
 
                 <div className="flex w-full flex-col gap-2 sm:flex-row">
                   {/* Payment Method */}
@@ -368,26 +362,36 @@ export function VehicleExpenseFormDialog({
                     name="paymentMethod"
                     render={({ field }) => (
                       <FormItem className="w-full sm:w-1/2">
-                        <FormLabel>Forma de Pagamento *</FormLabel>
+                        <FormLabel>Forma de Pagamento</FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
                         >
                           <FormControl>
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Selecione" />
+                              <SelectValue placeholder="Selecione">
+                                {field.value && (
+                                  <PaymentMethodSelectContent label={field.value} />
+                                )}
+                              </SelectValue>
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="Cartão de crédito">
-                              Cartão de crédito
+                              <PaymentMethodSelectContent label="Cartão de crédito" />
                             </SelectItem>
                             <SelectItem value="Cartão de débito">
-                              Débito
+                              <PaymentMethodSelectContent label="Cartão de débito" />
                             </SelectItem>
-                            <SelectItem value="Pix">Pix</SelectItem>
-                            <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                            <SelectItem value="Boleto">Boleto</SelectItem>
+                            <SelectItem value="Pix">
+                              <PaymentMethodSelectContent label="Pix" />
+                            </SelectItem>
+                            <SelectItem value="Dinheiro">
+                              <PaymentMethodSelectContent label="Dinheiro" />
+                            </SelectItem>
+                            <SelectItem value="Boleto">
+                              <PaymentMethodSelectContent label="Boleto" />
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -408,7 +412,21 @@ export function VehicleExpenseFormDialog({
                           >
                             <FormControl>
                               <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selecione" />
+                                <SelectValue placeholder="Selecione">
+                                  {field.value &&
+                                    (() => {
+                                      const selectedOption = cardOptions.find(
+                                        (opt) => opt.value === field.value
+                                      );
+                                      return selectedOption ? (
+                                        <ContaCartaoSelectContent
+                                          label={selectedOption.label}
+                                          logo={selectedOption.logo}
+                                          isCartao={true}
+                                        />
+                                      ) : null;
+                                    })()}
+                                </SelectValue>
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -417,7 +435,11 @@ export function VehicleExpenseFormDialog({
                                   key={option.value}
                                   value={option.value}
                                 >
-                                  {option.label}
+                                  <ContaCartaoSelectContent
+                                    label={option.label}
+                                    logo={option.logo}
+                                    isCartao={true}
+                                  />
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -439,7 +461,21 @@ export function VehicleExpenseFormDialog({
                           >
                             <FormControl>
                               <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Selecione" />
+                                <SelectValue placeholder="Selecione">
+                                  {field.value &&
+                                    (() => {
+                                      const selectedOption = accountOptions.find(
+                                        (opt) => opt.value === field.value
+                                      );
+                                      return selectedOption ? (
+                                        <ContaCartaoSelectContent
+                                          label={selectedOption.label}
+                                          logo={selectedOption.logo}
+                                          isCartao={false}
+                                        />
+                                      ) : null;
+                                    })()}
+                                </SelectValue>
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -448,7 +484,11 @@ export function VehicleExpenseFormDialog({
                                   key={option.value}
                                   value={option.value}
                                 >
-                                  {option.label}
+                                  <ContaCartaoSelectContent
+                                    label={option.label}
+                                    logo={option.logo}
+                                    isCartao={false}
+                                  />
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -460,34 +500,84 @@ export function VehicleExpenseFormDialog({
                   )}
                 </div>
 
-                {/* Payer */}
-                <FormField
-                  control={form.control}
-                  name="pagadorId"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormLabel>Pagador</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {pagadorOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                <div className="flex w-full flex-col gap-2 sm:flex-row">
+                  <FormField
+                    control={form.control}
+                    name="condition"
+                    render={({ field }) => (
+                      <FormItem className={condition === "Parcelado" ? "w-full sm:w-1/2" : "w-full"}>
+                        <FormLabel>Condição</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione">
+                                {field.value && (
+                                  <ConditionSelectContent label={field.value} />
+                                )}
+                              </SelectValue>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="À vista">
+                              <ConditionSelectContent label="À vista" />
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
+                            <SelectItem value="Parcelado">
+                              <ConditionSelectContent label="Parcelado" />
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {condition === "Parcelado" && (
+                    <FormField
+                      control={form.control}
+                      name="installmentCount"
+                      render={({ field }) => (
+                        <FormItem className="w-full sm:w-1/2">
+                          <FormLabel>Parcelas</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Selecione">
+                                  {field.value &&
+                                    (() => {
+                                      const selectedOption = cardOptions.find(
+                                        (opt) => opt.value === field.value
+                                      );
+                                      return selectedOption ? (
+                                        <ContaCartaoSelectContent
+                                          label={selectedOption.label}
+                                          logo={selectedOption.logo}
+                                          isCartao={true}
+                                        />
+                                      ) : null;
+                                    })()}
+                                </SelectValue>
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[...Array(24)].map((_, i) => (
+                                <SelectItem key={i + 2} value={String(i + 2)}>
+                                  {i + 2}x
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   )}
-                />
+                </div>
 
                 {/* Note */}
                 <FormField
@@ -495,9 +585,9 @@ export function VehicleExpenseFormDialog({
                   name="note"
                   render={({ field }) => (
                     <FormItem className="w-full">
-                      <FormLabel>Observações</FormLabel>
+                      <FormLabel>Anotação (Opcional)</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Observações adicionais" {...field} />
+                        <Textarea placeholder="Adicione observações sobre o lançamento" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

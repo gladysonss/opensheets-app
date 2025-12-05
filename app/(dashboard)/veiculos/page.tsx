@@ -31,10 +31,12 @@ export default async function VeiculosPage() {
   const contaOptions = userContas.map((c: any) => ({
     label: c.name,
     value: c.id,
+    logo: c.logo,
   }));
   const cartaoOptions = userCartoes.map((c: any) => ({
     label: c.name,
     value: c.id,
+    logo: c.logo,
   }));
   const vehicleOptions = vehicles.map((v: any) => ({
     label: v.name,
@@ -44,10 +46,14 @@ export default async function VeiculosPage() {
   const pagadorOptions = userPagadores.map((p: any) => ({
     label: p.name,
     value: p.id,
+    avatarUrl: p.avatarUrl,
+    defaultSplitPercentage: p.defaultSplitPercentage,
   }));
   const categoryOptions = categories.map((c: any) => ({
     label: c.name,
     value: c.id,
+    icon: c.icon,
+    group: c.type,
   }));
 
   return (
@@ -146,7 +152,21 @@ export default async function VeiculosPage() {
 
               <div className="mt-6 flex flex-wrap items-start justify-start gap-3 text-sm font-medium">
                 <VehicleFormDialog
-                  vehicle={vehicle}
+                  vehicle={{
+                    id: vehicle.id,
+                    name: vehicle.name,
+                    brand: vehicle.brand,
+                    model: vehicle.model,
+                    year: vehicle.year,
+                    plate: vehicle.plate,
+                    color: vehicle.color,
+                    renavam: vehicle.renavam,
+                    status: vehicle.status,
+                    type: vehicle.type,
+                    userId: vehicle.userId,
+                    createdAt: vehicle.createdAt,
+                    updatedAt: vehicle.updatedAt,
+                  }}
                   trigger={
                     <button
                       type="button"

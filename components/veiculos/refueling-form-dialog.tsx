@@ -41,6 +41,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { getTodayDateString } from "@/lib/utils/date";
 import { getLastOdometerAction } from "@/app/(dashboard)/veiculos/get-last-odometer";
+import {
+  ConditionSelectContent,
+  ContaCartaoSelectContent,
+  PagadorSelectContent,
+  PaymentMethodSelectContent,
+} from "@/components/lancamentos/select-items";
 
 const refuelingSchema = z.object({
   veiculoId: uuidSchema("Veículo"),
@@ -445,25 +451,212 @@ export function RefuelingFormDialog({
               />
             </div>
 
+            <FormField
+              control={form.control}
+              name="pagadorId"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel>Pagador</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value ?? undefined}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecione o pagador">
+                          {field.value &&
+                            (() => {
+                              const selectedOption = pagadorOptions.find(
+                                (opt) => opt.value === field.value
+                              );
+                              return selectedOption ? (
+                                <PagadorSelectContent
+                                  label={selectedOption.label}
+                                  avatarUrl={selectedOption.avatarUrl}
+                                />
+                              ) : null;
+                            })()}
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {pagadorOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <PagadorSelectContent
+                            label={option.label}
+                            avatarUrl={option.avatarUrl}
+                          />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="flex w-full flex-col gap-2 sm:flex-row">
               <FormField
                 control={form.control}
-                name="condition"
+                name="paymentMethod"
                 render={({ field }) => (
-                  <FormItem className={condition === "Parcelado" ? "w-full sm:w-1/2" : "w-full"}>
-                    <FormLabel>Condição *</FormLabel>
+                  <FormItem className="w-full sm:w-1/2">
+                    <FormLabel>Forma de Pagamento</FormLabel>
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder="Selecione">
+                            {field.value && (
+                              <PaymentMethodSelectContent label={field.value} />
+                            )}
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="À vista">À vista</SelectItem>
-                        <SelectItem value="Parcelado">Parcelado</SelectItem>
+                        <SelectItem value="Cartão de crédito">
+                          <PaymentMethodSelectContent label="Cartão de crédito" />
+                        </SelectItem>
+                        <SelectItem value="Cartão de débito">
+                          <PaymentMethodSelectContent label="Cartão de débito" />
+                        </SelectItem>
+                        <SelectItem value="Pix">
+                          <PaymentMethodSelectContent label="Pix" />
+                        </SelectItem>
+                        <SelectItem value="Dinheiro">
+                          <PaymentMethodSelectContent label="Dinheiro" />
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {paymentMethod === "Cartão de crédito" ? (
+                <FormField
+                  control={form.control}
+                  name="cartaoId"
+                  render={({ field }) => (
+                    <FormItem className="w-full sm:w-1/2">
+                      <FormLabel>Cartão</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value ?? undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione o cartão">
+                              {field.value &&
+                                (() => {
+                                  const selectedOption = cartaoOptions.find(
+                                    (opt) => opt.value === field.value
+                                  );
+                                  return selectedOption ? (
+                                    <ContaCartaoSelectContent
+                                      label={selectedOption.label}
+                                      logo={selectedOption.logo}
+                                      isCartao={true}
+                                    />
+                                  ) : null;
+                                })()}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {cartaoOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <ContaCartaoSelectContent
+                                label={option.label}
+                                logo={option.logo}
+                                isCartao={true}
+                              />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="contaId"
+                  render={({ field }) => (
+                    <FormItem className="w-full sm:w-1/2">
+                      <FormLabel>Conta / Banco</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value ?? undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione a conta">
+                              {field.value &&
+                                (() => {
+                                  const selectedOption = contaOptions.find(
+                                    (opt) => opt.value === field.value
+                                  );
+                                  return selectedOption ? (
+                                    <ContaCartaoSelectContent
+                                      label={selectedOption.label}
+                                      logo={selectedOption.logo}
+                                      isCartao={false}
+                                    />
+                                  ) : null;
+                                })()}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {contaOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <ContaCartaoSelectContent
+                                label={option.label}
+                                logo={option.logo}
+                                isCartao={false}
+                              />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </div>
+
+            <div className="flex w-full flex-col gap-2 sm:flex-row">
+              <FormField
+                control={form.control}
+                name="condition"
+                render={({ field }) => (
+                  <FormItem className={condition === "Parcelado" ? "w-full sm:w-1/2" : "w-full"}>
+                    <FormLabel>Condição</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione">
+                            {field.value && (
+                              <ConditionSelectContent label={field.value} />
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="À vista">
+                          <ConditionSelectContent label="À vista" />
+                        </SelectItem>
+                        <SelectItem value="Parcelado">
+                          <ConditionSelectContent label="Parcelado" />
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -477,7 +670,7 @@ export function RefuelingFormDialog({
                   name="installmentCount"
                   render={({ field }) => (
                     <FormItem className="w-full sm:w-1/2">
-                      <FormLabel>Parcelas *</FormLabel>
+                      <FormLabel>Parcelas</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
@@ -502,134 +695,15 @@ export function RefuelingFormDialog({
               )}
             </div>
 
-            <div className="flex w-full flex-col gap-2 sm:flex-row">
-              <FormField
-                control={form.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem className="w-full sm:w-1/2">
-                    <FormLabel>Forma de Pagamento</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Cartão de crédito">
-                          Cartão de crédito
-                        </SelectItem>
-                        <SelectItem value="Cartão de débito">
-                          Cartão de débito
-                        </SelectItem>
-                        <SelectItem value="Pix">Pix</SelectItem>
-                        <SelectItem value="Dinheiro">Dinheiro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {paymentMethod === "Cartão de crédito" ? (
-                <FormField
-                  control={form.control}
-                  name="cartaoId"
-                  render={({ field }) => (
-                    <FormItem className="w-full sm:w-1/2">
-                      <FormLabel>Cartão</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value ?? undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione o cartão" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {cartaoOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ) : (
-                <FormField
-                  control={form.control}
-                  name="contaId"
-                  render={({ field }) => (
-                    <FormItem className="w-full sm:w-1/2">
-                      <FormLabel>Conta / Banco</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value ?? undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Selecione a conta" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {contaOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </div>
-
-            <FormField
-              control={form.control}
-              name="pagadorId"
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Pagador</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value ?? undefined}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Selecione o pagador" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {pagadorOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             <FormField
               control={form.control}
               name="note"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observação</FormLabel>
+                  <FormLabel>Anotação (Opcional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Posto X, calibragem, etc."
+                      placeholder="Adicione observações sobre o lançamento"
                       className="resize-none"
                       {...field}
                       value={field.value ?? ""}

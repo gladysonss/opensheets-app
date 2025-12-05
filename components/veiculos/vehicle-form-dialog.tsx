@@ -53,13 +53,16 @@ const vehicleSchema = z.object({
   name: z.string().min(1, "Informe o nome do veículo."),
   brand: z.string().optional(),
   model: z.string().optional(),
-  year: z.coerce
-    .number()
-    .int()
-    .min(1900, "Ano inválido")
-    .max(new Date().getFullYear() + 1, "Ano inválido")
-    .optional()
-    .nullable(),
+  year: z.preprocess(
+    (val) => (val === "" || val === null ? null : Number(val)),
+    z
+      .number()
+      .int()
+      .min(1900, "Ano inválido")
+      .max(new Date().getFullYear() + 1, "Ano inválido")
+      .optional()
+      .nullable()
+  ),
   plate: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
   renavam: z.string().optional().nullable(),
