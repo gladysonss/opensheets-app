@@ -28,7 +28,7 @@ async function runMigrations() {
     await migrate(db, { migrationsFolder: "./drizzle" });
     console.log("✅ Migrations completed successfully!");
   } catch (error) {
-    if (error.code === '42P07') {
+    if (error.code === '42P07' || error.cause?.code === '42P07') {
       console.warn("⚠️  Tables already exist (likely created via db:push previously). Skipping migrations to avoid data loss.");
       console.warn("✅ Assuming database schema is up to date.");
     } else {
