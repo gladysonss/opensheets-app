@@ -41,14 +41,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
 # Nota: Se houver erros de tipo, ajuste typescript.ignoreBuildErrors no next.config.ts
 RUN pnpm build
 
-# ============================================
-# Stage 2.5: Dependências de Produção
-# ============================================
-FROM node:22-alpine AS prod-deps
-RUN corepack enable && corepack prepare pnpm@latest --activate
-WORKDIR /app
-COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --prod --frozen-lockfile
+# Stage 2.5 removido: Instalação direta no runner economiza espaço
 
 # ============================================
 # Stage 3: Runtime (produção)
@@ -73,17 +66,13 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copiar dependências de produção completas (garante que scripts como migrate.js funcionem)
-COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+# Instalar dependências específicas para a migração (muito mais leve que copiar todo node_modules)
+RUN pnpm add drizzle-orm pg dotenv
 
 # Copiar arquivos do Drizzle (migrations e schema)
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/db ./db
-
-# Copiar node_modules para ter drizzle-kit disponível para migrations
-# REMOVIDO PARA OTIMIZAÇÃO: Não precisamos mais do node_modules gigante em produção
-# COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Copiar script de migração leve
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/migrate.js ./scripts/migrate.js
@@ -103,9 +92,9 @@ RUN chown -R nextjs:nodejs /app
 # Mudar para usuário não-root
 USER nextjs
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" || exit 1
+# Health check usando wget (mais robusto em Alpine)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Comando de inicialização
 # Nota: Em produção com standalone build, o servidor é iniciado pelo arquivo server.js
