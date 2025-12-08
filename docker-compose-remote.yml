@@ -1,0 +1,103 @@
+# Docker Compose para Next.js + Banco Remoto (via Traefik)
+name: opensheets-remote
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: opensheets_app
+    restart: unless-stopped
+
+    # Não expomos portas diretamente quando usamos Traefik -> O tráfego vem pela rede interna
+    # ports:
+    #   - "3000:3000"
+
+    environment:
+      NODE_ENV: production
+      
+      # Banco de dados remoto (definido no .env)
+      DATABASE_URL: ${DATABASE_URL}
+      
+      # Auth
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      # A URL pública deve corresponder ao Host definido no Traefik e ser HTTPS
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-https://${DOMAIN_NAME:-app.localhost}}
+      
+      # Configurações de email (se usar)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+	  
+	  # Configurações de OAuth (se usar)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+	  
+	  # Configurações de AI providers (se usar)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
+    networks:
+      - traefik_network  # Rede onde o Traefik está rodando
+      - default          # Rede interna para comunicação entre containers deste stack (se houver outros)
+
+    labels:
+      - "traefik.enable=true"
+      
+      # --- Router Configuration ---
+      # Define o Host para roteamento. Usa variável DOMAIN_NAME ou fallback para app.localhost
+      - "traefik.http.routers.opensheets.rule=Host(`${DOMAIN_NAME:-app.localhost}`)"
+      - "traefik.http.routers.opensheets.entrypoints=websecure"
+      - "traefik.http.routers.opensheets.tls.certresolver=myresolver"
+      
+      # Anexa middlewares ao router (retry, timeout, etc)
+      - "traefik.http.routers.opensheets.middlewares=opensheets-retry"
+
+      # --- Service Configuration ---
+      # Aponta para a porta interna do container onde o Next.js roda
+      - "traefik.http.services.opensheets.loadbalancer.server.port=3000"
+      
+      # --- Middleware Configuration ---
+      # Exemplo: Retry 3 vezes em caso de falha de rede
+      - "traefik.http.middlewares.opensheets-retry.retry.attempts=3"
+      
+      # Exemplo opcional: CircuitBreaker para "timeout" baseado em latência
+      # Se 50% das requisições demorarem mais de 5s, abre o circuito
+      # - "traefik.http.middlewares.opensheets-cb.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 5000"
+
+    # Script de inicialização: roda migrations e inicia o servidor
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🚀 Iniciando container (Modo Remoto)..."
+        
+        echo "📦 Rodando migrations no banco remoto..."
+        # Tenta rodar migrations, mas não falha o container se der erro (útil se já estiver atualizado ou sem conexão momentânea)
+        pnpm db:push || echo "⚠️  Atenção: Migrations falharam ou conexão instável."
+        
+        echo "✅ Iniciando aplicação Next.js..."
+        node server.js
+		
+	# Healthcheck da aplicação
+	# healthcheck:
+	#   test:
+	#     [
+	#       "CMD",
+	#       "wget",
+	#       "--quiet",
+	#       "--tries=1",
+	#       "--spider",
+	#       "http://localhost:3000/api/health",
+	#     ]
+	#   interval: 30s
+	#   timeout: 10s
+	#   retries: 3
+	#   start_period: 40s
+	
+networks:
+  traefik_network:
+    external: true
+    name: ${TRAEFIK_NETWORK:-traefik_public}
