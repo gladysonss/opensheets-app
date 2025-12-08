@@ -66,8 +66,46 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Instalar dependências específicas para a migração (muito mais leve que copiar todo node_modules)
-RUN pnpm add drizzle-orm pg dotenv
+# ============================================
+# Stage 2.5: Dependências leves para migração
+# ============================================
+FROM node:22-alpine AS migration-deps
+WORKDIR /deps
+# Instalar apenas o necessário para rodar o script de migrate.js
+RUN npm init -y && \
+    npm install drizzle-orm pg dotenv
+
+# ============================================
+# Stage 3: Runtime (produção)
+# ============================================
+FROM node:22-alpine AS runner
+
+# Instalar wget para healthcheck (garantia)
+RUN apk add --no-cache wget
+
+# Instalar pnpm globalmente (para setup, embora não usaremos para install pesado)
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
+
+# Criar usuário não-root para segurança
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copiar apenas arquivos necessários para produção
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+
+# Copiar arquivos de build do Next.js (standalone já inclui node_modules podados)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copiar dependências extras de migração para pasta isolada
+COPY --from=migration-deps --chown=nextjs:nodejs /deps/node_modules ./migration_node_modules
+
+# Definir NODE_PATH para encontrar módulos extras se não estiverem no node_modules principal
+ENV NODE_PATH=/app/migration_node_modules
 
 # Copiar arquivos do Drizzle (migrations e schema)
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
@@ -92,8 +130,8 @@ RUN chown -R nextjs:nodejs /app
 # Mudar para usuário não-root
 USER nextjs
 
-# Health check usando wget (mais robusto em Alpine)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+# Health check usando wget (aumentei start-period para 30s)
+HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # Comando de inicialização
