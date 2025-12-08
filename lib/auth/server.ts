@@ -50,9 +50,17 @@ export async function getUserId() {
  * @throws Redirects to /login if user is not authenticated
  */
 export async function getUserSession() {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const h = await headers();
+  const session = await auth.api.getSession({ headers: h });
+
+  // console.log("[Auth Debug] getUserSession", {
+  //   hasSession: !!session,
+  //   hasUser: !!session?.user,
+  //   url: h.get("x-invoke-path") || "unknown",
+  // });
 
   if (!session?.user) {
+    console.log("[Auth Debug] No user session found, redirecting to /login");
     redirect("/login");
   }
 
