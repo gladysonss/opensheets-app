@@ -10,8 +10,8 @@ services:
     restart: unless-stopped
 
     # Não expomos portas diretamente quando usamos Traefik -> O tráfego vem pela rede interna
-    # ports:
-    #   - "3000:3000"
+    ports:
+      - "3000:3000"
 
     environment:
       NODE_ENV: production
