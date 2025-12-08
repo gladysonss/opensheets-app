@@ -42,6 +42,15 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
 RUN pnpm build
 
 # ============================================
+# Stage 2.5: Dependências de Produção
+# ============================================
+FROM node:22-alpine AS prod-deps
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install --prod --frozen-lockfile
+
+# ============================================
 # Stage 3: Runtime (produção)
 # ============================================
 FROM node:22-alpine AS runner
@@ -63,6 +72,9 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 # Copiar arquivos de build do Next.js
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copiar dependências de produção completas (garante que scripts como migrate.js funcionem)
+COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 # Copiar arquivos do Drizzle (migrations e schema)
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
