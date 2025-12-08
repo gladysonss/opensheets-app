@@ -12,6 +12,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
+    container_name: opensheets_app
     restart: unless-stopped
 
     # Expomos a porta para que o Coolify possa detectar e rotear o tráfego
@@ -19,6 +21,8 @@ services:
       - "${APP_PORT:-3000}:3000"
 
     environment:
+    
+      # Variáveis de ambiente da aplicação
       NODE_ENV: production
       
       # Banco de dados
@@ -29,7 +33,7 @@ services:
       # Autenticação
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       # No Coolify, você pode usar a variável mágica $COOLIFY_URL ou definir manualmente na UI
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
       
       # Integrações (Defina estas variáveis na UI do Coolify se necessário)
       RESEND_API_KEY: ${RESEND_API_KEY:-}
@@ -47,6 +51,9 @@ services:
       GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
 
+    networks:
+      - opensheets_network
+
     # Script de inicialização
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -59,3 +66,9 @@ services:
         
         echo "✅ Iniciando aplicação Next.js..."
         node server.js
+
+
+networks:
+  opensheets_network:
+    name: opensheets_network
+    driver: bridge
