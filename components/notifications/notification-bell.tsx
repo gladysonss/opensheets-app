@@ -103,7 +103,7 @@ export function NotificationBell({
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom" sideOffset={8}>
-          Notificações
+          Pagamentos para os próximos 5 dias.
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent
@@ -112,7 +112,7 @@ export function NotificationBell({
         className="w-80 max-h-[500px] overflow-hidden rounded-lg border border-border/60 bg-popover/95 p-0 shadow-lg backdrop-blur-lg supports-backdrop-filter:backdrop-blur-md"
       >
         <DropdownMenuLabel className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b border-border/60 bg-linear-to-b from-background/95 to-background/80 px-4 py-3 text-sm font-semibold">
-          <span>Notificações</span>
+          <span>Notificações | Próximos 5 dias.</span>
           {hasNotifications && (
             <Badge variant="outline" className="text-[10px] font-semibold">
               {totalCount} {totalCount === 1 ? "item" : "itens"}
