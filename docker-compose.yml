@@ -124,7 +124,7 @@ services:
         sleep 5
 
         echo "📦 Rodando migrations..."
-        pnpm db:push || echo "⚠️  Migrations falharam ou já estão atualizadas"
+        node scripts/migrate.js || echo "⚠️  Migrations falharam ou já estão atualizadas"
 
         echo "✅ Iniciando aplicação Next.js..."
         node server.js

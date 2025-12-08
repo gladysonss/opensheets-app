@@ -60,9 +60,8 @@ services:
       - |
         echo "🚀 Iniciando via Coolify..."
         
-        echo "📦 Rodando migrations..."
-        # Tenta rodar migrations. Se falhar (ex: sem conexão com banco no build), continua o deploy.
-        pnpm db:push || echo "⚠️  Migrations falharam ou conexão indisponível no momento."
+        # Rodando migrations com script leve (sem drizzle-kit)
+        node scripts/migrate.js || echo "⚠️  Migrations falharam ou conexão indisponível no momento."
         
         echo "✅ Iniciando aplicação Next.js..."
         node server.js

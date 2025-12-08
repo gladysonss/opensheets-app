@@ -70,7 +70,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.confi
 COPY --from=builder --chown=nextjs:nodejs /app/db ./db
 
 # Copiar node_modules para ter drizzle-kit disponível para migrations
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+# REMOVIDO PARA OTIMIZAÇÃO: Não precisamos mais do node_modules gigante em produção
+# COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Copiar script de migração leve
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/migrate.js ./scripts/migrate.js
 
 # Definir variáveis de ambiente de produção
 ENV NODE_ENV=production \

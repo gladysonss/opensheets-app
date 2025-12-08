@@ -75,8 +75,8 @@ services:
         echo "🚀 Iniciando container (Modo Remoto)..."
         
         echo "📦 Rodando migrations no banco remoto..."
-        # Tenta rodar migrations, mas não falha o container se der erro (útil se já estiver atualizado ou sem conexão momentânea)
-        pnpm db:push || echo "⚠️  Atenção: Migrations falharam ou conexão instável."
+        # Rodando migrations com script leve (sem drizzle-kit)
+        node scripts/migrate.js || echo "⚠️  Atenção: Migrations falharam ou conexão instável."
         
         echo "✅ Iniciando aplicação Next.js..."
         node server.js
