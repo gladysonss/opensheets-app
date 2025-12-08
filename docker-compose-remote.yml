@@ -10,8 +10,8 @@ services:
     restart: unless-stopped
 
     # Não expomos portas diretamente quando usamos Traefik -> O tráfego vem pela rede interna
-    # ports:
-    #   - "3000:3000"
+    ports:
+      - "${APP_PORT:-3000}:3000"
 
     environment:
       NODE_ENV: production
@@ -66,7 +66,7 @@ services:
       
       # Exemplo opcional: CircuitBreaker para "timeout" baseado em latência
       # Se 50% das requisições demorarem mais de 5s, abre o circuito
-      # - "traefik.http.middlewares.opensheets-cb.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 5000"
+      - "traefik.http.middlewares.opensheets-cb.circuitbreaker.expression=LatencyAtQuantileMS(50.0) > 5000"
 
     # Script de inicialização: roda migrations e inicia o servidor
     entrypoint: ["/bin/sh", "-c"]

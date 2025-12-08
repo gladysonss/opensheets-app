@@ -1,0 +1,61 @@
+# Docker Compose Otimizado para Coolify
+# O Coolify gerencia automaticamente:
+# - Reverse Proxy (Traefik) via UI
+# - Redes (Network)
+# - Certificados SSL
+# - Variáveis de ambiente (definidas na UI do Coolify)
+
+name: opensheets-coolify
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    # Expomos a porta para que o Coolify possa detectar e rotear o tráfego
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+    environment:
+      NODE_ENV: production
+      
+      # Banco de dados
+      # No Coolify, verifique se a DATABASE_URL está definida nas variáveis de ambiente do projeto
+      DB_PROVIDER=remote
+      DATABASE_URL: ${DATABASE_URL}
+
+      # Autenticação
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      # No Coolify, você pode usar a variável mágica $COOLIFY_URL ou definir manualmente na UI
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL}
+      
+      # Integrações (Defina estas variáveis na UI do Coolify se necessário)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      
+      # Configurações de OAuth (se usar)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+
+      # Configurações de AI providers (se usar)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+
+    # Script de inicialização
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "🚀 Iniciando via Coolify..."
+        
+        echo "📦 Rodando migrations..."
+        # Tenta rodar migrations. Se falhar (ex: sem conexão com banco no build), continua o deploy.
+        pnpm db:push || echo "⚠️  Migrations falharam ou conexão indisponível no momento."
+        
+        echo "✅ Iniciando aplicação Next.js..."
+        node server.js
