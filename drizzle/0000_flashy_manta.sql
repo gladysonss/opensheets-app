@@ -1,4 +1,4 @@
-CREATE TABLE "account" (
+CREATE TABLE IF NOT EXISTS "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"accountId" text NOT NULL,
 	"providerId" text NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE "account" (
 	"updatedAt" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "anotacoes" (
+CREATE TABLE IF NOT EXISTS "anotacoes" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"titulo" text,
 	"descricao" text,
@@ -24,7 +24,7 @@ CREATE TABLE "anotacoes" (
 	"user_id" text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "cartoes" (
+CREATE TABLE IF NOT EXISTS "cartoes" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"nome" text NOT NULL,
 	"dt_fechamento" text NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE "cartoes" (
 	"conta_id" uuid NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "categorias" (
+CREATE TABLE IF NOT EXISTS "categorias" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"nome" text NOT NULL,
 	"tipo" text NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE "categorias" (
 	"user_id" text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "contas" (
+CREATE TABLE IF NOT EXISTS "contas" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"nome" text NOT NULL,
 	"tipo_conta" text NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE "contas" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "faturas" (
+CREATE TABLE IF NOT EXISTS "faturas" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"status_pagamento" text,
 	"periodo" text,
@@ -70,7 +70,7 @@ CREATE TABLE "faturas" (
 	"cartao_id" uuid
 );
 --> statement-breakpoint
-CREATE TABLE "installment_anticipations" (
+CREATE TABLE IF NOT EXISTS "installment_anticipations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"series_id" uuid NOT NULL,
 	"periodo_antecipacao" text NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE "installment_anticipations" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "lancamentos" (
+CREATE TABLE IF NOT EXISTS "lancamentos" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"condicao" text NOT NULL,
 	"nome" text NOT NULL,
@@ -116,7 +116,7 @@ CREATE TABLE "lancamentos" (
 	"transfer_id" uuid
 );
 --> statement-breakpoint
-CREATE TABLE "orcamentos" (
+CREATE TABLE IF NOT EXISTS "orcamentos" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"valor" numeric(10, 2) NOT NULL,
 	"periodo" text NOT NULL,
@@ -125,7 +125,7 @@ CREATE TABLE "orcamentos" (
 	"categoria_id" uuid
 );
 --> statement-breakpoint
-CREATE TABLE "pagador_shares" (
+CREATE TABLE IF NOT EXISTS "pagador_shares" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"pagador_id" uuid NOT NULL,
 	"shared_with_user_id" text NOT NULL,
@@ -134,7 +134,7 @@ CREATE TABLE "pagador_shares" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "pagadores" (
+CREATE TABLE IF NOT EXISTS "pagadores" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"nome" text NOT NULL,
 	"email" text,
@@ -149,7 +149,7 @@ CREATE TABLE "pagadores" (
 	"user_id" text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "saved_insights" (
+CREATE TABLE IF NOT EXISTS "saved_insights" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" text NOT NULL,
 	"period" text NOT NULL,
@@ -159,7 +159,7 @@ CREATE TABLE "saved_insights" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "session" (
+CREATE TABLE IF NOT EXISTS "session" (
 	"id" text PRIMARY KEY NOT NULL,
 	"expiresAt" timestamp with time zone NOT NULL,
 	"token" text NOT NULL,
@@ -171,7 +171,7 @@ CREATE TABLE "session" (
 	CONSTRAINT "session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
-CREATE TABLE "user" (
+CREATE TABLE IF NOT EXISTS "user" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
@@ -182,7 +182,7 @@ CREATE TABLE "user" (
 	CONSTRAINT "user_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "verification" (
+CREATE TABLE IF NOT EXISTS "verification" (
 	"id" text PRIMARY KEY NOT NULL,
 	"identifier" text NOT NULL,
 	"value" text NOT NULL,
@@ -217,8 +217,8 @@ ALTER TABLE "pagador_shares" ADD CONSTRAINT "pagador_shares_created_by_user_id_u
 ALTER TABLE "pagadores" ADD CONSTRAINT "pagadores_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "saved_insights" ADD CONSTRAINT "saved_insights_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_userId_user_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "installment_anticipations_series_id_idx" ON "installment_anticipations" USING btree ("series_id");--> statement-breakpoint
-CREATE INDEX "installment_anticipations_user_id_idx" ON "installment_anticipations" USING btree ("user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "pagador_shares_unique" ON "pagador_shares" USING btree ("pagador_id","shared_with_user_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "pagadores_share_code_key" ON "pagadores" USING btree ("share_code");--> statement-breakpoint
-CREATE UNIQUE INDEX "saved_insights_user_period_idx" ON "saved_insights" USING btree ("user_id","period");
+CREATE INDEX IF NOT EXISTS "installment_anticipations_series_id_idx" ON "installment_anticipations" USING btree ("series_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "installment_anticipations_user_id_idx" ON "installment_anticipations" USING btree ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "pagador_shares_unique" ON "pagador_shares" USING btree ("pagador_id","shared_with_user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "pagadores_share_code_key" ON "pagadores" USING btree ("share_code");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "saved_insights_user_period_idx" ON "saved_insights" USING btree ("user_id","period");
