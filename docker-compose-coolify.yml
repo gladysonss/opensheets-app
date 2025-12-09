@@ -19,10 +19,14 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
 
+    expose:
+      - "3000"
+
     environment:
-    
       # Variáveis de ambiente da aplicação
       NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+      PORT: 3000
       
       # Banco de dados
       # No Coolify, verifique se a DATABASE_URL está definida nas variáveis de ambiente do projeto
