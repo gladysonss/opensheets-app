@@ -23,6 +23,10 @@ async function runMigrations() {
   console.log("📦 Running migrations via drizzle-orm...");
 
   try {
+    // Enable pgcrypto for gen_random_bytes/uuid
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "pgcrypto";');
+    console.log("✅ Extension 'pgcrypto' enabled.");
+
     // Run migrations from ./drizzle folder
     // Note: In the Docker container, we copy /drizzle to /app/drizzle, so relative path works
     await migrate(db, { migrationsFolder: "./drizzle" });
