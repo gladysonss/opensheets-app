@@ -130,9 +130,9 @@ RUN chown -R nextjs:nodejs /app
 # Mudar para usuário não-root
 USER nextjs
 
-# Health check usando wget (aumentei #start-period para 30s)
-#HEALTHCHECK --interval=30s --timeout=15s #--start-period=30s --retries=3 \
-#  CMD wget --no-verbose --tries=1 --spider #http://localhost:3000/api/health || exit 1
+# Health check usando wget (aumentei start-period para 30s)
+HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 
 # Comando de inicialização
