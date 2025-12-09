@@ -13,7 +13,6 @@ services:
       context: .
       dockerfile: Dockerfile
 
-    container_name: opensheets_app
     restart: unless-stopped
 
     # Expomos a porta para que o Coolify possa detectar e rotear o tráfego
@@ -27,7 +26,7 @@ services:
       
       # Banco de dados
       # No Coolify, verifique se a DATABASE_URL está definida nas variáveis de ambiente do projeto
-      DB_PROVIDER=remote
+      DB_PROVIDER: remote
       DATABASE_URL: ${DATABASE_URL}
 
       # Autenticação
@@ -51,8 +50,7 @@ services:
       GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
 
-    networks:
-      - opensheets_network
+
 
     # Script de inicialização
     entrypoint: ["/bin/sh", "-c"]
@@ -74,7 +72,3 @@ services:
       start_period: 30s
 
 
-networks:
-  opensheets_network:
-    name: opensheets_network
-    driver: bridge
