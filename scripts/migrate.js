@@ -20,6 +20,22 @@ async function runMigrations() {
 
   const db = drizzle(pool);
 
+  console.log("📦 Starting migration script...");
+  console.log("🔗 Connecting to:", connectionString.replace(/:[^:@]*@/, ":***@")); // Mask password
+
+  // DEBUG: Check files in ./drizzle
+  const fs = require('fs');
+  try {
+    const files = fs.readdirSync('./drizzle');
+    console.log(`📂 Found ${files.length} files in ./drizzle:`, files.filter(f => f.endsWith('.sql')));
+  } catch (e) {
+    console.error("❌ Failed to read ./drizzle:", e.message);
+  }
+
+  // DEBUG: Check existing tables
+  const res = await pool.query(`SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';`);
+  console.log("📊 Existing tables in public schema:", res.rows.map(r => r.table_name));
+
   console.log("📦 Running migrations via drizzle-orm...");
 
   try {
