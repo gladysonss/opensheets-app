@@ -131,7 +131,7 @@ RUN chown -R nextjs:nodejs /app
 USER nextjs
 
 # Health check usando wget (aumentei start-period para 30s)
-HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 
