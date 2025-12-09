@@ -59,6 +59,12 @@ ALTER TABLE "installment_anticipations" DROP CONSTRAINT IF EXISTS "installment_a
 --> statement-breakpoint
 ALTER TABLE "installment_anticipations" DROP CONSTRAINT IF EXISTS "installment_anticipations_conta_id_contas_id_fk";
 --> statement-breakpoint
+ALTER TABLE "pagador_shares" DROP CONSTRAINT IF EXISTS "pagador_shares_pagador_id_pagadores_id_fk";
+--> statement-breakpoint
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_pagador_id_pagadores_id_fk";
+--> statement-breakpoint
+ALTER TABLE "installment_anticipations" DROP CONSTRAINT IF EXISTS "installment_anticipations_pagador_id_pagadores_id_fk";
+--> statement-breakpoint
 ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_user_id_users_id_fk";
 --> statement-breakpoint
 ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_anticipation_id_installment_anticipations_id_fk";
