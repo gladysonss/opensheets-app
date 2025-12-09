@@ -114,7 +114,8 @@ USER nextjs
 
 # Health check usando wget (aumentei start-period para 30s)
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
 
 # Comando de inicialização
 # Nota: Em produção com standalone build, o servidor é iniciado pelo arquivo server.js
