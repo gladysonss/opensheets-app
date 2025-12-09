@@ -81,39 +81,39 @@ ALTER TABLE "pagadores" DROP CONSTRAINT IF EXISTS "pagadores_user_id_users_id_fk
 --> statement-breakpoint
 ALTER TABLE "saved_insights" DROP CONSTRAINT IF EXISTS "saved_insights_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "cartoes" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "cartoes" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "cartoes" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "categorias" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "categorias" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "categorias" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "contas" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "contas" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "contas" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "faturas" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "faturas" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "faturas" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "faturas" ALTER COLUMN "cartao_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "faturas" ALTER COLUMN "cartao_id" SET DATA TYPE uuid USING cartao_id::uuid;--> statement-breakpoint
 ALTER TABLE "faturas" ALTER COLUMN "cartao_id" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE "installment_anticipations" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "installment_anticipations" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "installment_anticipations" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "lancamentos" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "lancamentos" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "lancamentos" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "lancamentos" ALTER COLUMN "conta_id" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "lancamentos" ALTER COLUMN "categoria_id" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "lancamentos" ALTER COLUMN "pagador_id" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "lancamentos" ALTER COLUMN "cartao_id" SET DATA TYPE uuid;--> statement-breakpoint
-ALTER TABLE "orcamentos" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "lancamentos" ALTER COLUMN "conta_id" SET DATA TYPE uuid USING conta_id::uuid;--> statement-breakpoint
+ALTER TABLE "lancamentos" ALTER COLUMN "categoria_id" SET DATA TYPE uuid USING categoria_id::uuid;--> statement-breakpoint
+ALTER TABLE "lancamentos" ALTER COLUMN "pagador_id" SET DATA TYPE uuid USING pagador_id::uuid;--> statement-breakpoint
+ALTER TABLE "lancamentos" ALTER COLUMN "cartao_id" SET DATA TYPE uuid USING cartao_id::uuid;--> statement-breakpoint
+ALTER TABLE "orcamentos" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "orcamentos" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "orcamentos" ALTER COLUMN "categoria_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "orcamentos" ALTER COLUMN "categoria_id" SET DATA TYPE uuid USING categoria_id::uuid;--> statement-breakpoint
 ALTER TABLE "orcamentos" ALTER COLUMN "categoria_id" DROP NOT NULL;--> statement-breakpoint
-ALTER TABLE "pagador_shares" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "pagador_shares" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "pagador_shares" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
-ALTER TABLE "pagador_shares" ALTER COLUMN "pagador_id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "pagador_shares" ALTER COLUMN "pagador_id" SET DATA TYPE uuid USING pagador_id::uuid;--> statement-breakpoint
 ALTER TABLE "pagador_shares" ALTER COLUMN "created_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "pagador_shares" ALTER COLUMN "created_at" SET DEFAULT now();--> statement-breakpoint
-ALTER TABLE "pagadores" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "pagadores" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "pagadores" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
 ALTER TABLE "pagadores" ALTER COLUMN "status" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "pagadores" ALTER COLUMN "is_auto_send" SET DATA TYPE boolean;--> statement-breakpoint
 ALTER TABLE "pagadores" ALTER COLUMN "is_auto_send" SET NOT NULL;--> statement-breakpoint
-ALTER TABLE "saved_insights" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
+ALTER TABLE "saved_insights" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "saved_insights" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
 ALTER TABLE "saved_insights" ALTER COLUMN "created_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "saved_insights" ALTER COLUMN "created_at" SET DEFAULT now();--> statement-breakpoint
