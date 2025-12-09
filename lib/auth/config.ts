@@ -48,7 +48,14 @@ function getNameFromGoogleProfile(profile: GoogleProfile): string {
 // BETTER AUTH INSTANCE
 // ============================================================================
 
+// Define trusted origins dynamically
+const trustedOrigins = [
+  process.env.BETTER_AUTH_URL, // Main production URL
+  ...(process.env.TRUSTED_ORIGINS ? process.env.TRUSTED_ORIGINS.split(",") : []) // Additional comma-separated origins
+].filter(Boolean) as string[];
+
 export const auth = betterAuth({
+  trustedOrigins,
   // Email/Password authentication
   emailAndPassword: {
     enabled: true,
