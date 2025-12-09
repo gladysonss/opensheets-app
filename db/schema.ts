@@ -690,6 +690,29 @@ export const manutencoes = pgTable("manutencoes", {
   createdAt: timestamp("created_at", {
     mode: "date",
     withTimezone: true,
+    })
+    .notNull()
+    .defaultNow(),
+});
+
+export const invitations = pgTable("invitations", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  token: text("token").notNull().unique(),
+  createdBy: text("created_by").notNull(), // Stores ID or Email
+  expiresAt: timestamp("expires_at", {
+    mode: "date",
+    withTimezone: true,
+  }).notNull(),
+  usedAt: timestamp("used_at", {
+    mode: "date",
+    withTimezone: true,
+  }),
+  createdAt: timestamp("created_at", {
+    mode: "date",
+    withTimezone: true,
   })
     .notNull()
     .defaultNow(),

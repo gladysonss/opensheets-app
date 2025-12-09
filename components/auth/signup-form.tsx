@@ -12,8 +12,8 @@ import { Input } from "@/components/ui/input";
 import { authClient, googleSignInAvailable } from "@/lib/auth/client";
 import { cn } from "@/lib/utils/ui";
 import { RiLoader4Line } from "@remixicon/react";
-import { useRouter } from "next/navigation";
-import { useState, useMemo, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Logo } from "../logo";
 import { AuthErrorAlert } from "./auth-error-alert";
@@ -94,6 +94,30 @@ export function SignupForm({ className, ...props }: DivProps) {
   const [error, setError] = useState("");
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
+  const [inviteValid, setInviteValid] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    async function checkInvite() {
+      if (!token) return;
+      try {
+        const { getInviteByToken } = await import("@/app/(dashboard)/convites/actions");
+        const invite = await getInviteByToken(token);
+        if (invite?.email) {
+          setEmail(invite.email);
+          setInviteValid(true);
+          toast.success("Convite aplicado com sucesso!");
+        } else {
+          setInviteValid(false);
+          toast.error("Convite inválido ou expirado.");
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    checkInvite();
+  }, [token]);
 
   const passwordValidation = useMemo(
     () => validatePassword(password),
@@ -197,6 +221,8 @@ export function SignupForm({ className, ...props }: DivProps) {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  readOnly={!!inviteValid}
+                  className={inviteValid ? "bg-muted" : ""}
                   aria-invalid={!!error}
                 />
               </Field>

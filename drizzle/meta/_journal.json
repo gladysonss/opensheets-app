@@ -64,6 +64,13 @@
       "when": 1764875430684,
       "tag": "0008_marvelous_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1765309242059,
+      "tag": "0009_shallow_weapon_omega",
+      "breakpoints": true
     }
   ]
 }

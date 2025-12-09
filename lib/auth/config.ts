@@ -12,6 +12,7 @@ import { normalizeNameFromEmail } from "@/lib/pagadores/utils";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import type { GoogleProfile } from "better-auth/social-providers";
+import { eq, and, gt, isNull } from "drizzle-orm";
 
 // ============================================================================
 // GOOGLE OAUTH CONFIGURATION
@@ -91,13 +92,52 @@ export const auth = betterAuth({
     user: {
       create: {
         /**
-         * Após criar novo usuário, inicializa:
-         * 1. Categorias padrão (Receitas/Despesas)
-         * 2. Pagador padrão (vinculado ao usuário)
+         * ANTES de criar usuário (Segurança de Convites):
+         * 1. BOOTSTRAP: Se não houver usuários, libera (Primeiro Admin).
+         * 2. CHECK: Se já houver usuários, exige convite válido para o email.
+         */
+        before: async (user) => {
+          // 1. Bootstrap: Verifica se o banco está vazio
+          // Usando findMany com limit 1 para performance e robustez
+          const users = await db.query.user.findMany({
+            limit: 1,
+          });
+          
+          if (users.length === 0) {
+            console.log("[DEBUG] Bootstrap mode: Allowing first user");
+            return; // Libera o primeiro usuário sem convite
+          }
+
+          // 2. Verifica convite
+          console.log("[DEBUG] Checking invite for email:", user.email);
+          const invite = await db.query.invitations.findFirst({
+            where: (invitations, { eq, and, gt, isNull }) =>
+              and(
+                eq(invitations.email, user.email),
+                gt(invitations.expiresAt, new Date()), // Não expirado
+                isNull(invitations.usedAt) // Não usado
+              ),
+          });
+
+          if (!invite) {
+             throw new Error("Cadastro restrito! Você precisa de um convite válido.");
+          }
+
+          return {
+            data: {
+              ...user,
+            }
+          }
+        },
+        
+        /**
+         * DEPOIS de criar usuário:
+         * 1. Inicializa dados padrão (Categorias, Pagador).
+         * 2. Marca convite como usado.
          */
         after: async (user) => {
-          // Se falhar aqui, o usuário já foi criado - considere usar queue para retry
           try {
+            // Inicializa dados padrão
             await seedDefaultCategoriesForUser(user.id);
             await ensureDefaultPagadorForUser({
               id: user.id,
@@ -105,14 +145,32 @@ export const auth = betterAuth({
               email: user.email ?? undefined,
               image: user.image ?? undefined,
             });
+
+            // Marca convite como usado (se existir)
+            const invite = await db.query.invitations.findFirst({
+              where: (invitations, { eq, and, gt, isNull }) =>
+                and(
+                  eq(invitations.email, user.email),
+                  gt(invitations.expiresAt, new Date()),
+                  isNull(invitations.usedAt)
+                ),
+            });
+
+            if (invite) {
+             await db
+               .update(schema.invitations)
+               .set({ usedAt: new Date() })
+               .where(eq(schema.invitations.id, invite.id)); 
+            }
+
           } catch (error) {
             console.error(
-              "[Auth] Falha ao criar dados padrão do usuário:",
+              "[Auth] Falha no pós-processamento do usuário:",
               error
             );
-            // TODO: Considere enfileirar para retry ou notificar admin
           }
         },
+
       },
     },
   },

@@ -160,6 +160,11 @@ export function createSidebarNavData(pagadores: PagadorLike[]): SidebarNavData {
         url: "/ajustes",
         icon: RiSettingsLine,
       },
+      {
+        title: "Convites",
+        url: "/convites",
+        icon: RiGroupLine, // Using GroupLine as it relates to users
+      },
     ],
   };
 }
