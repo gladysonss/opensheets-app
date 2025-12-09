@@ -5,6 +5,8 @@ const { Pool } = require("pg");
 async function runMigrations() {
   console.log("📦 Starting migration script...");
   
+  const connectionString = process.env.DATABASE_URL;
+
   if (!connectionString) {
     console.error("❌ DATABASE_URL is not set");
     process.exit(1);
