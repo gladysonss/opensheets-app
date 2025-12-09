@@ -117,7 +117,7 @@ ALTER TABLE "pagador_shares" ALTER COLUMN "created_at" SET DEFAULT now();--> sta
 ALTER TABLE "pagadores" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "pagadores" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
 ALTER TABLE "pagadores" ALTER COLUMN "status" SET NOT NULL;--> statement-breakpoint
-ALTER TABLE "pagadores" ALTER COLUMN "is_auto_send" SET DATA TYPE boolean;--> statement-breakpoint
+ALTER TABLE "pagadores" ALTER COLUMN "is_auto_send" SET DATA TYPE boolean USING is_auto_send::boolean;--> statement-breakpoint
 ALTER TABLE "pagadores" ALTER COLUMN "is_auto_send" SET NOT NULL;--> statement-breakpoint
 ALTER TABLE "saved_insights" ALTER COLUMN "id" SET DATA TYPE uuid USING id::uuid;--> statement-breakpoint
 ALTER TABLE "saved_insights" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint
