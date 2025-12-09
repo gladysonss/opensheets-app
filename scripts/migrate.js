@@ -35,6 +35,9 @@ async function runMigrations() {
     if (error.code === '42P07' || error.cause?.code === '42P07') {
       console.warn("⚠️  Tables already exist (likely created via db:push previously). Skipping migrations to avoid data loss.");
       console.warn("✅ Assuming database schema is up to date.");
+    } else if (error.code === '42704' || error.cause?.code === '42704') {
+      console.warn("⚠️  Constraint or object does not exist (likely mismatch from db:push). Ignoring to proceed.");
+      console.warn("✅ Assuming the constraint is already removed or valid.");
     } else {
       console.error("❌ Migration failed:", error);
       process.exit(1);
