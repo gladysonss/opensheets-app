@@ -46,25 +46,7 @@ RUN pnpm build
 # ============================================
 # Stage 3: Runtime (produção)
 # ============================================
-FROM node:22-alpine AS runner
 
-# Instalar pnpm globalmente
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
-WORKDIR /app
-
-# Criar usuário não-root para segurança
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# Copiar apenas arquivos necessários para produção
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
-
-# Copiar arquivos de build do Next.js
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # ============================================
 # Stage 2.5: Dependências leves para migração
@@ -132,7 +114,7 @@ USER nextjs
 
 # Health check usando wget (aumentei start-period para 30s)
 HEALTHCHECK --interval=30s --timeout=15s --start-period=30s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
 
 # Comando de inicialização
 # Nota: Em produção com standalone build, o servidor é iniciado pelo arquivo server.js
