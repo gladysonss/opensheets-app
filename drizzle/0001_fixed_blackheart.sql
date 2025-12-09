@@ -30,25 +30,25 @@ DROP TABLE "saved_insights" CASCADE;--> statement-breakpoint
 DROP TABLE "session" CASCADE;--> statement-breakpoint
 DROP TABLE "user" CASCADE;--> statement-breakpoint
 DROP TABLE "verification" CASCADE;--> statement-breakpoint
-ALTER TABLE "cartoes" DROP CONSTRAINT "cartoes_user_id_user_id_fk";
+ALTER TABLE "cartoes" DROP CONSTRAINT IF EXISTS "cartoes_user_id_user_id_fk";
 --> statement-breakpoint
-ALTER TABLE "cartoes" DROP CONSTRAINT "cartoes_conta_id_contas_id_fk";
+ALTER TABLE "cartoes" DROP CONSTRAINT IF EXISTS "cartoes_conta_id_contas_id_fk";
 --> statement-breakpoint
-ALTER TABLE "categorias" DROP CONSTRAINT "categorias_user_id_user_id_fk";
+ALTER TABLE "categorias" DROP CONSTRAINT IF EXISTS "categorias_user_id_user_id_fk";
 --> statement-breakpoint
-ALTER TABLE "contas" DROP CONSTRAINT "contas_user_id_user_id_fk";
+ALTER TABLE "contas" DROP CONSTRAINT IF EXISTS "contas_user_id_user_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_antecipacao_id_installment_anticipations_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_antecipacao_id_installment_anticipations_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_user_id_user_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_user_id_user_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_pagador_id_pagadores_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_pagador_id_pagadores_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_cartao_id_cartoes_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_cartao_id_cartoes_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_conta_id_contas_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_conta_id_contas_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_categoria_id_categorias_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_categoria_id_categorias_id_fk";
 --> statement-breakpoint
 ALTER TABLE "cartoes" ALTER COLUMN "id" SET DATA TYPE text;--> statement-breakpoint
 ALTER TABLE "cartoes" ALTER COLUMN "id" DROP DEFAULT;--> statement-breakpoint

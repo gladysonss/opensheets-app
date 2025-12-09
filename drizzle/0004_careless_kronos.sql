@@ -43,43 +43,43 @@ CREATE TABLE "verification" (
 );
 --> statement-breakpoint
 ALTER TABLE "users" RENAME TO "account";--> statement-breakpoint
-ALTER TABLE "pagador_shares" DROP CONSTRAINT "pagador_shares_share_code_unique";--> statement-breakpoint
-ALTER TABLE "account" DROP CONSTRAINT "users_api_token_unique";--> statement-breakpoint
-ALTER TABLE "cartoes" DROP CONSTRAINT "cartoes_user_id_users_id_fk";
+ALTER TABLE "pagador_shares" DROP CONSTRAINT IF EXISTS "pagador_shares_share_code_unique";--> statement-breakpoint
+ALTER TABLE "account" DROP CONSTRAINT IF EXISTS "users_api_token_unique";--> statement-breakpoint
+ALTER TABLE "cartoes" DROP CONSTRAINT IF EXISTS "cartoes_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "categorias" DROP CONSTRAINT "categorias_user_id_users_id_fk";
+ALTER TABLE "categorias" DROP CONSTRAINT IF EXISTS "categorias_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "contas" DROP CONSTRAINT "contas_user_id_users_id_fk";
+ALTER TABLE "contas" DROP CONSTRAINT IF EXISTS "contas_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "faturas" DROP CONSTRAINT "faturas_user_id_users_id_fk";
+ALTER TABLE "faturas" DROP CONSTRAINT IF EXISTS "faturas_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "faturas" DROP CONSTRAINT "faturas_cartao_id_cartoes_id_fk";
+ALTER TABLE "faturas" DROP CONSTRAINT IF EXISTS "faturas_cartao_id_cartoes_id_fk";
 --> statement-breakpoint
-ALTER TABLE "installment_anticipations" DROP CONSTRAINT "installment_anticipations_user_id_users_id_fk";
+ALTER TABLE "installment_anticipations" DROP CONSTRAINT IF EXISTS "installment_anticipations_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "installment_anticipations" DROP CONSTRAINT "installment_anticipations_conta_id_contas_id_fk";
+ALTER TABLE "installment_anticipations" DROP CONSTRAINT IF EXISTS "installment_anticipations_conta_id_contas_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_user_id_users_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_anticipation_id_installment_anticipations_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_anticipation_id_installment_anticipations_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_conta_id_contas_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_conta_id_contas_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_categoria_id_categorias_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_categoria_id_categorias_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_pagador_id_pagadores_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_pagador_id_pagadores_id_fk";
 --> statement-breakpoint
-ALTER TABLE "lancamentos" DROP CONSTRAINT "lancamentos_cartao_id_cartoes_id_fk";
+ALTER TABLE "lancamentos" DROP CONSTRAINT IF EXISTS "lancamentos_cartao_id_cartoes_id_fk";
 --> statement-breakpoint
-ALTER TABLE "orcamentos" DROP CONSTRAINT "orcamentos_user_id_users_id_fk";
+ALTER TABLE "orcamentos" DROP CONSTRAINT IF EXISTS "orcamentos_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "orcamentos" DROP CONSTRAINT "orcamentos_categoria_id_categorias_id_fk";
+ALTER TABLE "orcamentos" DROP CONSTRAINT IF EXISTS "orcamentos_categoria_id_categorias_id_fk";
 --> statement-breakpoint
-ALTER TABLE "pagador_shares" DROP CONSTRAINT "pagador_shares_shared_with_user_id_users_id_fk";
+ALTER TABLE "pagador_shares" DROP CONSTRAINT IF EXISTS "pagador_shares_shared_with_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "pagadores" DROP CONSTRAINT "pagadores_user_id_users_id_fk";
+ALTER TABLE "pagadores" DROP CONSTRAINT IF EXISTS "pagadores_user_id_users_id_fk";
 --> statement-breakpoint
-ALTER TABLE "saved_insights" DROP CONSTRAINT "saved_insights_user_id_users_id_fk";
+ALTER TABLE "saved_insights" DROP CONSTRAINT IF EXISTS "saved_insights_user_id_users_id_fk";
 --> statement-breakpoint
 ALTER TABLE "cartoes" ALTER COLUMN "id" SET DATA TYPE uuid;--> statement-breakpoint
 ALTER TABLE "cartoes" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();--> statement-breakpoint

@@ -18,7 +18,7 @@ CREATE TABLE "manutencoes" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "abastecimentos" DROP CONSTRAINT "abastecimentos_lancamento_id_lancamentos_id_fk";
+ALTER TABLE "abastecimentos" DROP CONSTRAINT IF EXISTS "abastecimentos_lancamento_id_lancamentos_id_fk";
 --> statement-breakpoint
 ALTER TABLE "pagadores" ADD COLUMN "default_split_percentage" integer DEFAULT 50 NOT NULL;--> statement-breakpoint
 ALTER TABLE "veiculos" ADD COLUMN "type" text DEFAULT 'car' NOT NULL;--> statement-breakpoint
