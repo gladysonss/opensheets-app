@@ -12,11 +12,13 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-blue?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue?style=flat-square&logo=docker)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-orange?style=flat-square&logo=creative-commons)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/Sponsor-❤️-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/felipegcoutinho)
 
 ---
 
 <p align="center">
-  <img src="./public/dashboard-preview.png" alt="Dashboard Preview" width="800" />
+  <img src="./public/dashboard-preview-light.png" alt="Dashboard Preview" width="800" />
 </p>
 
 ---
@@ -36,6 +38,7 @@
 - [Banco de Dados](#-banco-de-dados)
 - [Arquitetura](#-arquitetura)
 - [Contribuindo](#-contribuindo)
+- [Apoie o Projeto](#-apoie-o-projeto)
 
 ---
 
@@ -44,6 +47,8 @@
 **Opensheets** é um projeto pessoal de gestão financeira que criei para organizar minhas próprias finanças. Cansei de usar planilhas desorganizadas e aplicativos que não fazem exatamente o que preciso, então decidi construir algo do jeito que funciona pra mim.
 
 A ideia é simples: ter um lugar onde consigo ver todas as minhas contas, cartões, gastos e receitas de forma clara. Se isso for útil pra você também, fique à vontade para usar e contribuir.
+
+> 💡 **Licença Não-Comercial:** Este projeto é gratuito para uso pessoal, mas não pode ser usado comercialmente. Veja mais detalhes na seção [Licença](#-licença).
 
 ### ⚠️ Avisos importantes
 
@@ -835,9 +840,59 @@ Contribuições são muito bem-vindas!
 
 ---
 
+## 💖 Apoie o Projeto
+
+Se o **Opensheets** está sendo útil para você e você quer apoiar o desenvolvimento contínuo do projeto, considere se tornar um sponsor!
+
+[![Sponsor no GitHub](https://img.shields.io/badge/Sponsor_no_GitHub-❤️-ea4aaa?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/felipegcoutinho)
+
+### Por que apoiar?
+
+- 🚀 **Desenvolvimento contínuo** - Novas features e melhorias regulares
+- 🐛 **Correções de bugs** - Manutenção ativa e suporte
+- 📚 **Documentação** - Guias e tutoriais detalhados
+- 💡 **Novas ideias** - Implementação de sugestões da comunidade
+
+### Outras formas de contribuir
+
+Além do suporte financeiro, você pode contribuir:
+
+- ⭐ Dando uma **estrela** no repositório
+- 🐛 Reportando **bugs** e sugerindo melhorias
+- 📖 Melhorando a **documentação**
+- 💻 Submetendo **pull requests**
+- 💬 Compartilhando o projeto com outras pessoas
+
+---
+
 ## 📄 Licença
 
-Este projeto é open source e está disponível sob a [Licença MIT](LICENSE).
+Este projeto está licenciado sob a **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International** (CC BY-NC-SA 4.0).
+
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC_BY--NC--SA_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
+### ✅ Você PODE:
+
+- **Usar** o projeto para fins pessoais
+- **Modificar** o código-fonte
+- **Distribuir** e compartilhar o projeto
+- **Fazer fork** e criar versões modificadas
+
+### ❌ Você NÃO PODE:
+
+- **Uso comercial** - Ganhar dinheiro com o projeto (vender, SaaS, consultoria baseada nele)
+- **Remover créditos** - Você deve manter a atribuição ao autor original
+- **Mudar a licença** - Suas modificações devem usar a mesma licença
+
+### 📋 Requisitos:
+
+- Dar **crédito** ao autor original (Felipe Coutinho)
+- Indicar se **modificações** foram feitas
+- Distribuir sob a **mesma licença** (CC BY-NC-SA 4.0)
+
+**Resumo:** Use livremente para projetos pessoais, contribua, modifique - mas não ganhe dinheiro com isso.
+
+Para o texto legal completo, consulte o arquivo [LICENSE](LICENSE) ou visite [creativecommons.org](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.pt).
 
 ---
 
@@ -861,7 +916,11 @@ Este projeto é open source e está disponível sob a [Licença MIT](LICENSE).
 
 <div align="center">
 
-**⭐ Se este projeto foi útil, considere dar uma estrela!**
+**⭐ Se este projeto foi útil pra você:**
+
+- Dê uma estrela no repositório
+- [Apoie o projeto como sponsor](https://github.com/sponsors/felipegcoutinho)
+- Compartilhe com outras pessoas
 
 Desenvolvido com ❤️ para a comunidade open source
 

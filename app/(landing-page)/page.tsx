@@ -159,11 +159,19 @@ export default async function Page() {
         <div className="container">
           <div className="mx-auto max-w-6xl">
             <Image
-              src="/dashboard-preview.png"
+              src="/dashboard-preview-light.png"
               alt="opensheets Dashboard Preview"
               width={1920}
               height={1080}
-              className="w-full h-auto"
+              className="w-full h-auto dark:hidden"
+              priority
+            />
+            <Image
+              src="/dashboard-preview-dark.png"
+              alt="opensheets Dashboard Preview"
+              width={1920}
+              height={1080}
+              className="w-full h-auto hidden dark:block"
               priority
             />
           </div>

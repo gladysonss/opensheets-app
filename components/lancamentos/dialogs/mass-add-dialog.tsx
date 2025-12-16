@@ -30,7 +30,6 @@ import { createMonthOptions } from "@/lib/utils/period";
 import { RiAddLine, RiDeleteBinLine } from "@remixicon/react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { EstabelecimentoInput } from "../shared/estabelecimento-input";
 import type { SelectOption } from "../../types";
 import {
   CategoriaSelectContent,
@@ -40,6 +39,7 @@ import {
   PaymentMethodSelectContent,
   TransactionTypeSelectContent,
 } from "../select-items";
+import { EstabelecimentoInput } from "../shared/estabelecimento-input";
 
 interface MassAddDialogProps {
   open: boolean;
@@ -57,7 +57,6 @@ interface MassAddDialogProps {
 export interface MassAddFormData {
   fixedFields: {
     transactionType?: string;
-    pagadorId?: string;
     paymentMethod?: string;
     condition?: string;
     period?: string;
@@ -69,6 +68,7 @@ export interface MassAddFormData {
     name: string;
     amount: string;
     categoriaId?: string;
+    pagadorId?: string;
   }>;
 }
 
@@ -78,6 +78,7 @@ interface TransactionRow {
   name: string;
   amount: string;
   categoriaId: string | undefined;
+  pagadorId: string | undefined;
 }
 
 export function MassAddDialog({
@@ -96,9 +97,6 @@ export function MassAddDialog({
 
   // Fixed fields state (sempre ativos, sem checkboxes)
   const [transactionType, setTransactionType] = useState<string>("Despesa");
-  const [pagadorId, setPagadorId] = useState<string | undefined>(
-    defaultPagadorId ?? undefined
-  );
   const [paymentMethod, setPaymentMethod] = useState<string>(
     LANCAMENTO_PAYMENT_METHODS[0]
   );
@@ -115,6 +113,7 @@ export function MassAddDialog({
       name: "",
       amount: "",
       categoriaId: undefined,
+      pagadorId: defaultPagadorId ?? undefined,
     },
   ]);
 
@@ -141,6 +140,7 @@ export function MassAddDialog({
         name: "",
         amount: "",
         categoriaId: undefined,
+        pagadorId: defaultPagadorId ?? undefined,
       },
     ]);
   };
@@ -191,7 +191,6 @@ export function MassAddDialog({
     const formData: MassAddFormData = {
       fixedFields: {
         transactionType,
-        pagadorId,
         paymentMethod,
         condition,
         period,
@@ -203,6 +202,7 @@ export function MassAddDialog({
         name: t.name.trim(),
         amount: t.amount.trim(),
         categoriaId: t.categoriaId,
+        pagadorId: t.pagadorId,
       })),
     };
 
@@ -212,7 +212,6 @@ export function MassAddDialog({
       onOpenChange(false);
       // Reset form
       setTransactionType("Despesa");
-      setPagadorId(defaultPagadorId ?? undefined);
       setPaymentMethod(LANCAMENTO_PAYMENT_METHODS[0]);
       setCondition("À vista");
       setPeriod(selectedPeriod);
@@ -225,6 +224,7 @@ export function MassAddDialog({
           name: "",
           amount: "",
           categoriaId: undefined,
+          pagadorId: defaultPagadorId ?? undefined,
         },
       ]);
     } catch (_error) {
@@ -236,7 +236,7 @@ export function MassAddDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:px-8">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-6 sm:px-8">
         <DialogHeader>
           <DialogTitle>Adicionar múltiplos lançamentos</DialogTitle>
           <DialogDescription>
@@ -248,7 +248,7 @@ export function MassAddDialog({
           {/* Fixed Fields Section */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Valores Padrão</h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               {/* Transaction Type */}
               <div className="space-y-2">
                 <Label htmlFor="transaction-type">Tipo de Transação</Label>
@@ -270,39 +270,6 @@ export function MassAddDialog({
                     <SelectItem value="Receita">
                       <TransactionTypeSelectContent label="Receita" />
                     </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Pagador */}
-              <div className="space-y-2">
-                <Label htmlFor="pagador">Pagador</Label>
-                <Select value={pagadorId} onValueChange={setPagadorId}>
-                  <SelectTrigger id="pagador" className="w-full">
-                    <SelectValue placeholder="Selecione o pagador">
-                      {pagadorId &&
-                        (() => {
-                          const selectedOption = pagadorOptions.find(
-                            (opt) => opt.value === pagadorId
-                          );
-                          return selectedOption ? (
-                            <PagadorSelectContent
-                              label={selectedOption.label}
-                              avatarUrl={selectedOption.avatarUrl}
-                            />
-                          ) : null;
-                        })()}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {pagadorOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <PagadorSelectContent
-                          label={option.label}
-                          avatarUrl={option.avatarUrl}
-                        />
-                      </SelectItem>
-                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -489,6 +456,7 @@ export function MassAddDialog({
                           )
                         }
                         placeholder="Data"
+                        className="w-32 truncate"
                         required
                       />
                     </div>
@@ -528,6 +496,52 @@ export function MassAddDialog({
                         required
                       />
                     </div>
+
+                    <div className="w-full">
+                      <Label
+                        htmlFor={`pagador-${transaction.id}`}
+                        className="sr-only"
+                      >
+                        Pagador {index + 1}
+                      </Label>
+                      <Select
+                        value={transaction.pagadorId}
+                        onValueChange={(value) =>
+                          updateTransaction(transaction.id, "pagadorId", value)
+                        }
+                      >
+                        <SelectTrigger
+                          id={`pagador-${transaction.id}`}
+                          className="w-32 truncate"
+                        >
+                          <SelectValue placeholder="Pagador">
+                            {transaction.pagadorId &&
+                              (() => {
+                                const selectedOption = pagadorOptions.find(
+                                  (opt) => opt.value === transaction.pagadorId
+                                );
+                                return selectedOption ? (
+                                  <PagadorSelectContent
+                                    label={selectedOption.label}
+                                    avatarUrl={selectedOption.avatarUrl}
+                                  />
+                                ) : null;
+                              })()}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pagadorOptions.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <PagadorSelectContent
+                                label={option.label}
+                                avatarUrl={option.avatarUrl}
+                              />
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     <div className="w-full">
                       <Label
                         htmlFor={`categoria-${transaction.id}`}
@@ -547,7 +561,7 @@ export function MassAddDialog({
                       >
                         <SelectTrigger
                           id={`categoria-${transaction.id}`}
-                          className="w-42 truncate"
+                          className="w-32 truncate"
                         >
                           <SelectValue placeholder="Categoria" />
                         </SelectTrigger>

@@ -19,6 +19,7 @@ import type { ChangelogEntry } from "@/lib/changelog/data";
 import {
   getCategoryLabel,
   groupEntriesByCategory,
+  parseSafariCompatibleDate,
 } from "@/lib/changelog/utils";
 import { cn } from "@/lib/utils";
 import { RiMegaphoneLine } from "@remixicon/react";
@@ -115,7 +116,7 @@ export function ChangelogNotification({
                             {entry.title}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(entry.date), {
+                            {formatDistanceToNow(parseSafariCompatibleDate(entry.date), {
                               addSuffix: true,
                               locale: ptBR,
                             })}

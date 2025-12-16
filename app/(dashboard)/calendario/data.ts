@@ -1,16 +1,19 @@
+import { getRecentEstablishmentsAction } from "@/app/(dashboard)/lancamentos/actions";
 import { cartoes, lancamentos } from "@/db/schema";
+import { db } from "@/lib/db";
 import {
   buildOptionSets,
   buildSluggedFilters,
   fetchLancamentoFilterSources,
   mapLancamentosData,
 } from "@/lib/lancamentos/page-helpers";
-import { db } from "@/lib/db";
 import { PAGADOR_ROLE_ADMIN } from "@/lib/pagadores/constants";
 import { and, eq, gte, lte, ne, or } from "drizzle-orm";
-import { getRecentEstablishmentsAction } from "@/app/(dashboard)/lancamentos/actions";
 
-import type { CalendarData, CalendarEvent } from "@/components/calendario/types";
+import type {
+  CalendarData,
+  CalendarEvent,
+} from "@/components/calendario/types";
 
 const PAYMENT_METHOD_BOLETO = "Boleto";
 const TRANSACTION_TYPE_TRANSFERENCIA = "Transferência";
@@ -98,7 +101,11 @@ export const fetchCalendarData = async ({
 
   const cardTotals = new Map<string, number>();
   for (const item of lancamentosData) {
-    if (!item.cartaoId || item.period !== period || item.pagadorRole !== PAGADOR_ROLE_ADMIN) {
+    if (
+      !item.cartaoId ||
+      item.period !== period ||
+      item.pagadorRole !== PAGADOR_ROLE_ADMIN
+    ) {
       continue;
     }
     const amount = Math.abs(item.amount ?? 0);

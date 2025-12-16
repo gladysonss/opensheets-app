@@ -712,17 +712,24 @@ export function LancamentosTable({
                 </Button>
               ) : null}
               {onMassAdd ? (
-                <Button
-                  onClick={onMassAdd}
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0"
-                >
-                  <RiAddCircleFill className="size-4" />
-                  <span className="sr-only">
-                    Adicionar múltiplos lançamentos
-                  </span>
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onMassAdd}
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                    >
+                      <RiAddCircleFill className="size-4" />
+                      <span className="sr-only">
+                        Adicionar múltiplos lançamentos
+                      </span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Adicionar múltiplos lançamentos</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
           ) : (

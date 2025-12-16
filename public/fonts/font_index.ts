@@ -1,17 +1,23 @@
-import { Barlow, Inter } from "next/font/google";
+import localFont from "next/font/local";
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+const laranjinha = localFont({
+  src: [
+    {
+      path: "./LaranjinhaTextPro_Rg.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./LaranjinhaDisplayPro_Bd.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  display: "swap",
 });
 
-const barlow = Barlow({
-  subsets: ["latin"],
-  weight: "500",
-});
-
-const main_font = inter;
-const money_font = barlow;
-const title_font = inter;
+const main_font = laranjinha;
+const money_font = laranjinha;
+const title_font = laranjinha;
 
 export { main_font, money_font, title_font };

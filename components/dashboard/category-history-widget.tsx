@@ -205,7 +205,7 @@ export function CategoryHistoryWidget({ data }: CategoryHistoryWidgetProps) {
       <CardContent className="space-y-2.5">
         <div className="space-y-2">
           {selectedCategoryDetails.length > 0 && (
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 mb-4">
               <div className="flex flex-wrap gap-2">
                 {selectedCategoryDetails.map((category) => {
                   if (!category) return null;

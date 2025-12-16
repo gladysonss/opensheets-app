@@ -1,7 +1,31 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2025-12-10T16:45:04.592Z",
+  "generatedAt": "2025-12-13T13:52:07.921Z",
   "entries": [
+    {
+      "id": "0767636eed5085a211e08de52577beed658f05cf",
+      "type": "feat",
+      "title": "ajustar layout e estilos",
+      "date": "2025-12-11 17:43:33 +0000",
+      "icon": "✨",
+      "category": "feature"
+    },
+    {
+      "id": "0744991edd717748fce24e148907eafd7222c64e",
+      "type": "chore",
+      "title": "remove unused code and clean up imports",
+      "date": "2025-12-10 16:53:19 +0000",
+      "icon": "🔧",
+      "category": "chore"
+    },
+    {
+      "id": "b767bd959955854e54b41270e9c220fe0b546947",
+      "type": "feat",
+      "title": "adicionar widgets de despesas e receitas com gráfico - Adiciona o widget de despesas por categoria com gráfico. - Adiciona o widget de receitas por categoria com gráfico. - Atualiza a configuração dos widgets para incluir novos componentes. - Ajusta estilos e tamanhos de elementos nos widgets existentes.",
+      "date": "2025-12-10 16:51:45 +0000",
+      "icon": "✨",
+      "category": "feature"
+    },
     {
       "id": "89765d4373b820a3e7c8e4fa40479dd2673558b0",
       "type": "chore",
@@ -135,30 +159,6 @@
       "type": "feat",
       "title": "adicionar estrutura para gerenciamento de mudanças de código",
       "date": "2025-11-23 12:26:05 -0300",
-      "icon": "✨",
-      "category": "feature"
-    },
-    {
-      "id": "3ce8541a5699317c747c629e1c0e07d579458633",
-      "type": "fix",
-      "title": "corrige a grafia de \"OpenSheets\" para \"Opensheets\"",
-      "date": "2025-11-22 20:29:25 -0300",
-      "icon": "🐛",
-      "category": "bugfix"
-    },
-    {
-      "id": "ac24961e4b97bfb58a52e1b95f3d9696fe1e5d86",
-      "type": "refactor",
-      "title": "substitui '•' por '-' em textos de exibição",
-      "date": "2025-11-22 12:58:57 -0300",
-      "icon": "♻️",
-      "category": "refactor"
-    },
-    {
-      "id": "8c5313119dafaf3a33ab4bffeeb40d7f0278eb08",
-      "type": "feat",
-      "title": "atualiza fontes e altera avatar SVG",
-      "date": "2025-11-22 12:49:56 -0300",
       "icon": "✨",
       "category": "feature"
     }

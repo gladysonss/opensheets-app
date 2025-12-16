@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { DashboardCardMetrics } from "@/lib/dashboard/metrics";
+import { title_font } from "@/public/fonts/font_index";
 import {
   RiArrowDownLine,
   RiArrowUpLine,
@@ -15,7 +16,6 @@ import {
   RiSubtractLine,
 } from "@remixicon/react";
 import MoneyValues from "../money-values";
-import { title_font } from "@/public/fonts/font_index";
 
 type SectionCardsProps = {
   metrics: DashboardCardMetrics;
@@ -73,7 +73,7 @@ export function SectionCards({ metrics }: SectionCardsProps) {
           <Card key={label} className="@container/card gap-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-1">
-                <Icon className="size-4" />
+                <Icon className="size-4 text-primary" />
                 {label}
               </CardTitle>
               <MoneyValues className="text-2xl" amount={metric.current} />
@@ -84,9 +84,9 @@ export function SectionCards({ metrics }: SectionCardsProps) {
                 </Badge>
               </CardAction>
             </CardHeader>
-            <CardFooter className="flex-col items-start gap-1.5 text-sm">
-              <div className="line-clamp-1 flex gap-2 text-sm">
-                Mês anterior:
+            <CardFooter className="flex-col items-start gap-2 text-sm">
+              <div className="line-clamp-1 flex gap-2 text-xs">
+                Mês anterior
               </div>
               <div className="text-muted-foreground">
                 <MoneyValues amount={metric.previous} />

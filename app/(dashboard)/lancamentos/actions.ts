@@ -1,6 +1,6 @@
 "use server";
 
-import { contas, lancamentos } from "@/db/schema";
+import { contas, lancamentos, pagadores, categorias, cartoes } from "@/db/schema";
 import {
   INITIAL_BALANCE_CONDITION,
   INITIAL_BALANCE_NOTE,
@@ -30,6 +30,78 @@ import {
 import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+
+// ============================================================================
+// Authorization Validation Functions
+// ============================================================================
+
+async function validatePagadorOwnership(
+  userId: string,
+  pagadorId: string | null | undefined
+): Promise<boolean> {
+  if (!pagadorId) return true; // Se não tem pagadorId, não precisa validar
+
+  const pagador = await db.query.pagadores.findFirst({
+    where: and(
+      eq(pagadores.id, pagadorId),
+      eq(pagadores.userId, userId)
+    ),
+  });
+
+  return !!pagador;
+}
+
+async function validateCategoriaOwnership(
+  userId: string,
+  categoriaId: string | null | undefined
+): Promise<boolean> {
+  if (!categoriaId) return true;
+
+  const categoria = await db.query.categorias.findFirst({
+    where: and(
+      eq(categorias.id, categoriaId),
+      eq(categorias.userId, userId)
+    ),
+  });
+
+  return !!categoria;
+}
+
+async function validateContaOwnership(
+  userId: string,
+  contaId: string | null | undefined
+): Promise<boolean> {
+  if (!contaId) return true;
+
+  const conta = await db.query.contas.findFirst({
+    where: and(
+      eq(contas.id, contaId),
+      eq(contas.userId, userId)
+    ),
+  });
+
+  return !!conta;
+}
+
+async function validateCartaoOwnership(
+  userId: string,
+  cartaoId: string | null | undefined
+): Promise<boolean> {
+  if (!cartaoId) return true;
+
+  const cartao = await db.query.cartoes.findFirst({
+    where: and(
+      eq(cartoes.id, cartaoId),
+      eq(cartoes.userId, userId)
+    ),
+  });
+
+  return !!cartao;
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
 
 const resolvePeriod = (purchaseDate: string, period?: string | null) => {
   if (period && /^\d{4}-\d{2}$/.test(period)) {
@@ -472,6 +544,42 @@ export async function createLancamentoAction(
     const user = await getUser();
     const data = createSchema.parse(input);
 
+    // Validar propriedade dos recursos referenciados
+    if (data.pagadorId) {
+      const isValid = await validatePagadorOwnership(user.id, data.pagadorId);
+      if (!isValid) {
+        return { success: false, error: "Pagador não encontrado ou sem permissão." };
+      }
+    }
+
+    if (data.secondaryPagadorId) {
+      const isValid = await validatePagadorOwnership(user.id, data.secondaryPagadorId);
+      if (!isValid) {
+        return { success: false, error: "Pagador secundário não encontrado ou sem permissão." };
+      }
+    }
+
+    if (data.categoriaId) {
+      const isValid = await validateCategoriaOwnership(user.id, data.categoriaId);
+      if (!isValid) {
+        return { success: false, error: "Categoria não encontrada." };
+      }
+    }
+
+    if (data.contaId) {
+      const isValid = await validateContaOwnership(user.id, data.contaId);
+      if (!isValid) {
+        return { success: false, error: "Conta não encontrada." };
+      }
+    }
+
+    if (data.cartaoId) {
+      const isValid = await validateCartaoOwnership(user.id, data.cartaoId);
+      if (!isValid) {
+        return { success: false, error: "Cartão não encontrado." };
+      }
+    }
+
     const period = resolvePeriod(data.purchaseDate, data.period);
     const purchaseDate = parseLocalDateString(data.purchaseDate);
     const dueDate = data.dueDate ? parseLocalDateString(data.dueDate) : null;
@@ -555,6 +663,42 @@ export async function updateLancamentoAction(
   try {
     const user = await getUser();
     const data = updateSchema.parse(input);
+
+    // Validar propriedade dos recursos referenciados
+    if (data.pagadorId) {
+      const isValid = await validatePagadorOwnership(user.id, data.pagadorId);
+      if (!isValid) {
+        return { success: false, error: "Pagador não encontrado ou sem permissão." };
+      }
+    }
+
+    if (data.secondaryPagadorId) {
+      const isValid = await validatePagadorOwnership(user.id, data.secondaryPagadorId);
+      if (!isValid) {
+        return { success: false, error: "Pagador secundário não encontrado ou sem permissão." };
+      }
+    }
+
+    if (data.categoriaId) {
+      const isValid = await validateCategoriaOwnership(user.id, data.categoriaId);
+      if (!isValid) {
+        return { success: false, error: "Categoria não encontrada." };
+      }
+    }
+
+    if (data.contaId) {
+      const isValid = await validateContaOwnership(user.id, data.contaId);
+      if (!isValid) {
+        return { success: false, error: "Conta não encontrada." };
+      }
+    }
+
+    if (data.cartaoId) {
+      const isValid = await validateCartaoOwnership(user.id, data.cartaoId);
+      if (!isValid) {
+        return { success: false, error: "Cartão não encontrado." };
+      }
+    }
 
     const existing = await db.query.lancamentos.findFirst({
       columns: {
@@ -1124,12 +1268,12 @@ const massAddTransactionSchema = z.object({
     .number({ message: "Informe o valor da transação." })
     .min(0, "Informe um valor maior ou igual a zero."),
   categoriaId: uuidSchema("Categoria").nullable().optional(),
+  pagadorId: uuidSchema("Pagador").nullable().optional(),
 });
 
 const massAddSchema = z.object({
   fixedFields: z.object({
     transactionType: z.enum(LANCAMENTO_TRANSACTION_TYPES).optional(),
-    pagadorId: uuidSchema("Pagador").nullable().optional(),
     paymentMethod: z.enum(LANCAMENTO_PAYMENT_METHODS).optional(),
     condition: z.enum(LANCAMENTO_CONDITIONS).optional(),
     period: z
@@ -1156,6 +1300,46 @@ export async function createMassLancamentosAction(
     const user = await getUser();
     const data = massAddSchema.parse(input);
 
+    // Validar campos fixos
+    if (data.fixedFields.contaId) {
+      const isValid = await validateContaOwnership(user.id, data.fixedFields.contaId);
+      if (!isValid) {
+        return { success: false, error: "Conta não encontrada." };
+      }
+    }
+
+    if (data.fixedFields.cartaoId) {
+      const isValid = await validateCartaoOwnership(user.id, data.fixedFields.cartaoId);
+      if (!isValid) {
+        return { success: false, error: "Cartão não encontrado." };
+      }
+    }
+
+    // Validar cada transação individual
+    for (let i = 0; i < data.transactions.length; i++) {
+      const transaction = data.transactions[i];
+
+      if (transaction.pagadorId) {
+        const isValid = await validatePagadorOwnership(user.id, transaction.pagadorId);
+        if (!isValid) {
+          return {
+            success: false,
+            error: `Pagador não encontrado na transação ${i + 1}.`
+          };
+        }
+      }
+
+      if (transaction.categoriaId) {
+        const isValid = await validateCategoriaOwnership(user.id, transaction.categoriaId);
+        if (!isValid) {
+          return {
+            success: false,
+            error: `Categoria não encontrada na transação ${i + 1}.`
+          };
+        }
+      }
+    }
+
     // Default values for non-fixed fields
     const defaultTransactionType = LANCAMENTO_TRANSACTION_TYPES[0];
     const defaultCondition = LANCAMENTO_CONDITIONS[0];
@@ -1181,7 +1365,7 @@ export async function createMassLancamentosAction(
       const condition = data.fixedFields.condition ?? defaultCondition;
       const paymentMethod =
         data.fixedFields.paymentMethod ?? defaultPaymentMethod;
-      const pagadorId = data.fixedFields.pagadorId ?? null;
+      const pagadorId = transaction.pagadorId ?? null;
       const contaId =
         paymentMethod === "Cartão de crédito"
           ? null

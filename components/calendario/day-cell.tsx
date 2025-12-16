@@ -1,10 +1,10 @@
 "use client";
 
+import type { CalendarDay, CalendarEvent } from "@/components/calendario/types";
+import { currencyFormatter } from "@/lib/lancamentos/formatting-helpers";
 import { cn } from "@/lib/utils/ui";
 import { RiAddLine } from "@remixicon/react";
 import type { KeyboardEvent, MouseEvent } from "react";
-import type { CalendarDay, CalendarEvent } from "@/components/calendario/types";
-import { currencyFormatter } from "@/lib/lancamentos/formatting-helpers";
 
 type DayCellProps = {
   day: CalendarDay;
@@ -17,17 +17,18 @@ export const EVENT_TYPE_STYLES: Record<
   { wrapper: string; dot: string; accent?: string }
 > = {
   lancamento: {
-    wrapper: "bg-cyan-600 text-cyan-50 dark:bg-cyan-500/30 dark:text-cyan-200",
-    dot: "bg-cyan-600",
+    wrapper:
+      "bg-orange-100 text-orange-600 dark:bg-orange-800 dark:text-orange-50",
+    dot: "bg-orange-600",
   },
   boleto: {
-    wrapper: "bg-red-600 text-red-50 dark:bg-red-500/30 dark:text-red-200",
-    dot: "bg-red-600",
+    wrapper:
+      "bg-emerald-100 text-emerald-600 dark:bg-emerald-800 dark:text-emerald-50",
+    dot: "bg-emerald-600",
   },
   cartao: {
-    wrapper:
-      "bg-violet-600 text-violet-50 dark:bg-violet-500/30 dark:text-violet-200",
-    dot: "bg-violet-600",
+    wrapper: "bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-50",
+    dot: "bg-blue-600",
   },
 };
 
@@ -82,11 +83,12 @@ const DayEventPreview = ({ event }: { event: CalendarEvent }) => {
   return (
     <div
       className={cn(
-        "flex w-full items-center justify-between gap-2 rounded p-1 text-xs leading-tight",
+        "flex w-full items-center justify-between gap-2 rounded p-1 text-xs",
         style.wrapper
       )}
     >
-      <div className="flex min-w-0">
+      <div className="flex min-w-0 items-center gap-1">
+        <span className={cn("size-1.5 rounded-full", style.dot)} />
         <span className="truncate">{label}</span>
       </div>
       {complement ? (

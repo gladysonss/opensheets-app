@@ -12,10 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { title_font } from "@/public/fonts/font_index";
 import { RiExpandDiagonalLine } from "@remixicon/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
-import { title_font } from "@/public/fonts/font_index";
 
 const OVERFLOW_THRESHOLD_PX = 16;
 const OVERFLOW_CHECK_DEBOUNCE_MS = 100;
@@ -82,7 +82,7 @@ export default function WidgetCard({
             <CardTitle
               className={`${title_font.className} flex items-center gap-1`}
             >
-              {icon}
+              <span className="text-primary">{icon}</span>
               {title}
             </CardTitle>
             <CardDescription className="text-muted-foreground text-sm capitalize mt-1">

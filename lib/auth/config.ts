@@ -49,6 +49,14 @@ function getNameFromGoogleProfile(profile: GoogleProfile): string {
 // ============================================================================
 
 export const auth = betterAuth({
+  // Base URL configuration
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+
+  // Trust host configuration for production environments
+  trustedOrigins: process.env.BETTER_AUTH_URL
+    ? [process.env.BETTER_AUTH_URL]
+    : [],
+
   // Email/Password authentication
   emailAndPassword: {
     enabled: true,
@@ -61,6 +69,26 @@ export const auth = betterAuth({
     schema,
     camelCase: true,
   }),
+
+  // Session configuration - Safari compatibility
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5, // 5 minutes
+    },
+  },
+
+  // Advanced configuration for Safari compatibility
+  advanced: {
+    cookieOptions: {
+      sameSite: "lax", // Safari compatible
+      secure: process.env.NODE_ENV === "production", // HTTPS in production only
+      httpOnly: true,
+    },
+    crossSubDomainCookies: {
+      enabled: false, // Disable for better Safari compatibility
+    },
+  },
 
   // Google OAuth (se configurado)
   socialProviders:
