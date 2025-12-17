@@ -467,15 +467,15 @@ pnpm env:setup
 │              docker-compose.yml                 │
 ├─────────────────────────────────────────────────┤
 │                                                 │
-│  ┌──────────────────┐      ┌─────────────────┐ │
-│  │   app            │      │      db         │ │
-│  │   (Next.js 16)   │◄─────┤  (PostgreSQL 18)│ │
-│  │   Port: 3000     │      │  Port: 5432     │ │
-│  │   Node.js 22     │      │  Alpine Linux   │ │
-│  └──────────────────┘      └─────────────────┘ │
+│  ┌──────────────────┐      ┌─────────────────┐  │
+│  │   app            │      │      db         │  │
+│  │   (Next.js 16)   │◄─────┤  (PostgreSQL 18)│  │
+│  │   Port: 3000     │      │  Port: 5432     │  │
+│  │   Node.js 22     │      │  Alpine Linux   │  │
+│  └──────────────────┘      └─────────────────┘  │
 │                                                 │
-│  Network: opensheets_network (bridge)                │
-│  Volume: opensheets_postgres_data (persistent)       │
+│  Network: opensheets_network (bridge)           │
+│  Volume: opensheets_postgres_data (persistent)  │
 │                                                 │
 └─────────────────────────────────────────────────┘
 ```
