@@ -22,7 +22,7 @@ function MoneyValues({ amount, className }: Props) {
     <span
       className={cn(
         money_font.className,
-        "inline-flex items-baseline font-medium transition-all duration-200",
+        "inline-flex items-baseline transition-all duration-200 tracking-tighter",
         privacyMode &&
           "blur-[6px] select-none hover:blur-none focus-within:blur-none",
         className

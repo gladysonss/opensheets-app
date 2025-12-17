@@ -102,49 +102,67 @@ export const verification = pgTable("verification", {
 
 // ===================== PUBLIC TABLES =====================
 
-export const contas = pgTable("contas", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: text("nome").notNull(),
-  accountType: text("tipo_conta").notNull(),
-  note: text("anotacao"),
-  status: text("status").notNull(),
-  logo: text("logo").notNull(),
-  initialBalance: numeric("saldo_inicial", { precision: 12, scale: 2 })
-    .notNull()
-    .default("0"),
-  excludeFromBalance: boolean("excluir_do_saldo")
-    .notNull()
-    .default(false),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", {
-    mode: "date",
-    withTimezone: true,
+export const contas = pgTable(
+  "contas",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text("nome").notNull(),
+    accountType: text("tipo_conta").notNull(),
+    note: text("anotacao"),
+    status: text("status").notNull(),
+    logo: text("logo").notNull(),
+    initialBalance: numeric("saldo_inicial", { precision: 12, scale: 2 })
+      .notNull()
+      .default("0"),
+    excludeFromBalance: boolean("excluir_do_saldo")
+      .notNull()
+      .default(false),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userIdStatusIdx: index("contas_user_id_status_idx").on(
+      table.userId,
+      table.status
+    ),
   })
-    .notNull()
-    .defaultNow(),
-});
+);
 
-export const categorias = pgTable("categorias", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: text("nome").notNull(),
-  type: text("tipo").notNull(),
-  icon: text("icone"),
-  createdAt: timestamp("created_at", {
-    mode: "date",
-    withTimezone: true,
+export const categorias = pgTable(
+  "categorias",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text("nome").notNull(),
+    type: text("tipo").notNull(),
+    icon: text("icone"),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    userIdTypeIdx: index("categorias_user_id_type_idx").on(
+      table.userId,
+      table.type
+    ),
   })
-    .notNull()
-    .defaultNow(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-});
+);
 
 export const pagadores = pgTable(
   "pagadores",
@@ -180,6 +198,14 @@ export const pagadores = pgTable(
     uniqueShareCode: uniqueIndex("pagadores_share_code_key").on(
       table.shareCode
     ),
+    userIdStatusIdx: index("pagadores_user_id_status_idx").on(
+      table.userId,
+      table.status
+    ),
+    userIdRoleIdx: index("pagadores_user_id_role_idx").on(
+      table.userId,
+      table.role
+    ),
   })
 );
 
@@ -214,73 +240,104 @@ export const pagadorShares = pgTable(
   })
 );
 
-export const cartoes = pgTable("cartoes", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: text("nome").notNull(),
-  closingDay: text("dt_fechamento").notNull(),
-  dueDay: text("dt_vencimento").notNull(),
-  note: text("anotacao"),
-  limit: numeric("limite", { precision: 10, scale: 2 }),
-  brand: text("bandeira"),
-  logo: text("logo"),
-  status: text("status").notNull(),
-  createdAt: timestamp("created_at", {
-    mode: "date",
-    withTimezone: true,
+export const cartoes = pgTable(
+  "cartoes",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text("nome").notNull(),
+    closingDay: text("dt_fechamento").notNull(),
+    dueDay: text("dt_vencimento").notNull(),
+    note: text("anotacao"),
+    limit: numeric("limite", { precision: 10, scale: 2 }),
+    brand: text("bandeira"),
+    logo: text("logo"),
+    status: text("status").notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    contaId: uuid("conta_id")
+      .notNull()
+      .references(() => contas.id, { onDelete: "cascade", onUpdate: "cascade" }),
+  },
+  (table) => ({
+    userIdStatusIdx: index("cartoes_user_id_status_idx").on(
+      table.userId,
+      table.status
+    ),
   })
-    .notNull()
-    .defaultNow(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  contaId: uuid("conta_id")
-    .notNull()
-    .references(() => contas.id, { onDelete: "cascade", onUpdate: "cascade" }),
-});
+);
 
-export const faturas = pgTable("faturas", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  paymentStatus: text("status_pagamento"),
-  period: text("periodo"),
-  createdAt: timestamp("created_at", {
-    mode: "date",
-    withTimezone: true,
+export const faturas = pgTable(
+  "faturas",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    paymentStatus: text("status_pagamento"),
+    period: text("periodo"),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    cartaoId: uuid("cartao_id").references(() => cartoes.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  },
+  (table) => ({
+    userIdPeriodIdx: index("faturas_user_id_period_idx").on(
+      table.userId,
+      table.period
+    ),
+    cartaoIdPeriodIdx: index("faturas_cartao_id_period_idx").on(
+      table.cartaoId,
+      table.period
+    ),
   })
-    .notNull()
-    .defaultNow(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  cartaoId: uuid("cartao_id").references(() => cartoes.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-});
+);
 
-export const orcamentos = pgTable("orcamentos", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  amount: numeric("valor", { precision: 10, scale: 2 }).notNull(),
-  period: text("periodo").notNull(),
-  createdAt: timestamp("created_at", {
-    mode: "date",
-    withTimezone: true,
+export const orcamentos = pgTable(
+  "orcamentos",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    amount: numeric("valor", { precision: 10, scale: 2 }).notNull(),
+    period: text("periodo").notNull(),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    categoriaId: uuid("categoria_id").references(() => categorias.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+  },
+  (table) => ({
+    userIdPeriodIdx: index("orcamentos_user_id_period_idx").on(
+      table.userId,
+      table.period
+    ),
   })
-    .notNull()
-    .defaultNow(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  categoriaId: uuid("categoria_id").references(() => categorias.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-});
+);
 
 export const anotacoes = pgTable("anotacoes", {
   id: uuid("id")
@@ -300,6 +357,31 @@ export const anotacoes = pgTable("anotacoes", {
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
 });
+
+export const userUpdateLog = pgTable(
+  "user_update_log",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    updateId: text("update_id").notNull(), // commit hash
+    readAt: timestamp("read_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    userIdUpdateIdIdx: uniqueIndex("user_update_log_user_update_idx").on(
+      table.userId,
+      table.updateId
+    ),
+  })
+);
 
 export const savedInsights = pgTable(
   "saved_insights",
@@ -379,58 +461,87 @@ export const installmentAnticipations = pgTable(
   })
 );
 
-export const lancamentos = pgTable("lancamentos", {
-  id: uuid("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  condition: text("condicao").notNull(),
-  name: text("nome").notNull(),
-  paymentMethod: text("forma_pagamento").notNull(),
-  note: text("anotacao"),
-  amount: numeric("valor", { precision: 12, scale: 2 }).notNull(),
-  purchaseDate: date("data_compra", { mode: "date" }).notNull(),
-  transactionType: text("tipo_transacao").notNull(),
-  installmentCount: smallint("qtde_parcela"),
-  period: text("periodo").notNull(),
-  currentInstallment: smallint("parcela_atual"),
-  recurrenceCount: integer("qtde_recorrencia"),
-  dueDate: date("data_vencimento", { mode: "date" }),
-  boletoPaymentDate: date("dt_pagamento_boleto", { mode: "date" }),
-  isSettled: boolean("realizado").default(false),
-  isDivided: boolean("dividido").default(false),
-  isAnticipated: boolean("antecipado").default(false),
-  anticipationId: uuid("antecipacao_id").references(
-    () => installmentAnticipations.id,
-    { onDelete: "set null" }
-  ),
-  createdAt: timestamp("created_at", {
-    mode: "date",
-    withTimezone: true,
+export const lancamentos = pgTable(
+  "lancamentos",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    condition: text("condicao").notNull(),
+    name: text("nome").notNull(),
+    paymentMethod: text("forma_pagamento").notNull(),
+    note: text("anotacao"),
+    amount: numeric("valor", { precision: 12, scale: 2 }).notNull(),
+    purchaseDate: date("data_compra", { mode: "date" }).notNull(),
+    transactionType: text("tipo_transacao").notNull(),
+    installmentCount: smallint("qtde_parcela"),
+    period: text("periodo").notNull(),
+    currentInstallment: smallint("parcela_atual"),
+    recurrenceCount: integer("qtde_recorrencia"),
+    dueDate: date("data_vencimento", { mode: "date" }),
+    boletoPaymentDate: date("dt_pagamento_boleto", { mode: "date" }),
+    isSettled: boolean("realizado").default(false),
+    isDivided: boolean("dividido").default(false),
+    isAnticipated: boolean("antecipado").default(false),
+    anticipationId: uuid("antecipacao_id").references(
+      () => installmentAnticipations.id,
+      { onDelete: "set null" }
+    ),
+    createdAt: timestamp("created_at", {
+      mode: "date",
+      withTimezone: true,
+    })
+      .notNull()
+      .defaultNow(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    cartaoId: uuid("cartao_id").references(() => cartoes.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+    contaId: uuid("conta_id").references(() => contas.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+    categoriaId: uuid("categoria_id").references(() => categorias.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+    pagadorId: uuid("pagador_id").references(() => pagadores.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+    }),
+    seriesId: uuid("series_id"),
+    transferId: uuid("transfer_id"),
+  },
+  (table) => ({
+    // Índice composto mais importante: userId + period (usado em quase todas as queries do dashboard)
+    userIdPeriodIdx: index("lancamentos_user_id_period_idx").on(
+      table.userId,
+      table.period
+    ),
+    // Índice para queries ordenadas por data de compra
+    userIdPurchaseDateIdx: index("lancamentos_user_id_purchase_date_idx").on(
+      table.userId,
+      table.purchaseDate
+    ),
+    // Índice para buscar parcelas de uma série
+    seriesIdIdx: index("lancamentos_series_id_idx").on(table.seriesId),
+    // Índice para buscar transferências relacionadas
+    transferIdIdx: index("lancamentos_transfer_id_idx").on(table.transferId),
+    // Índice para filtrar por condição (aberto, realizado, cancelado)
+    userIdConditionIdx: index("lancamentos_user_id_condition_idx").on(
+      table.userId,
+      table.condition
+    ),
+    // Índice para queries de cartão específico
+    cartaoIdPeriodIdx: index("lancamentos_cartao_id_period_idx").on(
+      table.cartaoId,
+      table.period
+    ),
   })
-    .notNull()
-    .defaultNow(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  cartaoId: uuid("cartao_id").references(() => cartoes.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-  contaId: uuid("conta_id").references(() => contas.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-  categoriaId: uuid("categoria_id").references(() => categorias.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-  pagadorId: uuid("pagador_id").references(() => pagadores.id, {
-    onDelete: "cascade",
-    onUpdate: "cascade",
-  }),
-  seriesId: uuid("series_id"),
-  transferId: uuid("transfer_id"),
-});
+);
 
 export const userRelations = relations(user, ({ many, one }) => ({
   accounts: many(account),
@@ -444,6 +555,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
   orcamentos: many(orcamentos),
   pagadores: many(pagadores),
   installmentAnticipations: many(installmentAnticipations),
+  updateLogs: many(userUpdateLog),
 }));
 
 export const accountRelations = relations(account, ({ one }) => ({
@@ -551,6 +663,13 @@ export const savedInsightsRelations = relations(savedInsights, ({ one }) => ({
   }),
 }));
 
+export const userUpdateLogRelations = relations(userUpdateLog, ({ one }) => ({
+  user: one(user, {
+    fields: [userUpdateLog.userId],
+    references: [user.id],
+  }),
+}));
+
 export const lancamentosRelations = relations(lancamentos, ({ one }) => ({
   user: one(user, {
     fields: [lancamentos.userId],
@@ -616,3 +735,4 @@ export type SavedInsight = typeof savedInsights.$inferSelect;
 export type Lancamento = typeof lancamentos.$inferSelect;
 export type InstallmentAnticipation =
   typeof installmentAnticipations.$inferSelect;
+export type UserUpdateLog = typeof userUpdateLog.$inferSelect;

@@ -10,11 +10,7 @@ export default async function HistoricoCategoriasPage() {
   const data = await fetchCategoryHistory(user.id, currentPeriod);
 
   return (
-    <main className="flex flex-col gap-6">
-      <p className="text-muted-foreground">
-        Acompanhe o histórico de desempenho das suas categorias ao longo de 9
-        meses.
-      </p>
+    <main>
       <CategoryHistoryWidget data={data} />
     </main>
   );

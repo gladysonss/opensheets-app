@@ -188,7 +188,7 @@ const buildColumns = ({
             <EstabelecimentoLogo name={name} size={28} />
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="line-clamp-2 max-w-[180px] font-bold truncate">
+                <span className="line-clamp-2 max-w-[160px] font-semibold truncate">
                   {name}
                 </span>
               </TooltipTrigger>
@@ -712,17 +712,24 @@ export function LancamentosTable({
                 </Button>
               ) : null}
               {onMassAdd ? (
-                <Button
-                  onClick={onMassAdd}
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0"
-                >
-                  <RiAddCircleFill className="size-4" />
-                  <span className="sr-only">
-                    Adicionar múltiplos lançamentos
-                  </span>
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onMassAdd}
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                    >
+                      <RiAddCircleFill className="size-4" />
+                      <span className="sr-only">
+                        Adicionar múltiplos lançamentos
+                      </span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Adicionar múltiplos lançamentos</p>
+                  </TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
           ) : (

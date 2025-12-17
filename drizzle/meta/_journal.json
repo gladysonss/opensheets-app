@@ -8,6 +8,20 @@
       "when": 1762993507299,
       "tag": "0000_flashy_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765199006435,
+      "tag": "0001_young_mister_fear",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765200545692,
+      "tag": "0002_slimy_flatman",
+      "breakpoints": true
     }
   ]
 }

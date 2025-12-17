@@ -48,6 +48,14 @@ type NavSection = {
   items: NavItem[];
 };
 
+const MONTH_PERIOD_PARAM = "periodo";
+
+const PERIOD_AWARE_PATHS = new Set([
+  "/dashboard",
+  "/lancamentos",
+  "/orcamentos",
+]);
+
 export function NavMain({ sections }: { sections: NavSection[] }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -120,7 +128,7 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
                         className={itemIsActive ? activeLinkClasses : ""}
                       >
                         <Link prefetch href={buildHrefWithPeriod(item.url)}>
-                          <item.icon className={"h-4 w-4"} />
+                          <item.icon className="size-4" />
                           {item.title}
                         </Link>
                       </SidebarMenuButton>
@@ -167,7 +175,7 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
                                               src={avatarSrc}
                                               alt={`Avatar de ${subItem.title}`}
                                             />
-                                            <AvatarFallback className="text-[10px] font-medium uppercase">
+                                            <AvatarFallback className="text-xs font-medium uppercase">
                                               {initial}
                                             </AvatarFallback>
                                           </Avatar>
@@ -196,11 +204,3 @@ export function NavMain({ sections }: { sections: NavSection[] }) {
     </>
   );
 }
-
-const MONTH_PERIOD_PARAM = "periodo";
-
-const PERIOD_AWARE_PATHS = new Set([
-  "/dashboard",
-  "/lancamentos",
-  "/orcamentos",
-]);

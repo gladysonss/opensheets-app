@@ -87,7 +87,7 @@ export function CategoryDetailHeader({
     <Card className="px-4">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-start gap-3">
-          <span className="flex size-12 items-center justify-center rounded-xl bg-muted border text-primary">
+          <span className="flex size-12 items-center justify-center rounded-xl bg-muted">
             {IconComponent ? (
               <IconComponent className="size-6" aria-hidden />
             ) : (

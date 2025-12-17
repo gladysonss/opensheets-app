@@ -1,23 +1,23 @@
-import { Funnel_Display } from "next/font/google";
 import localFont from "next/font/local";
 
-const anthropic_sans = localFont({
+const laranjinha = localFont({
   src: [
     {
-      path: "../fonts/anthropic-sans.woff2",
+      path: "./LaranjinhaTextPro_Rg.woff2",
       weight: "400",
       style: "normal",
     },
+    {
+      path: "./LaranjinhaDisplayPro_Bd.woff2",
+      weight: "700",
+      style: "normal",
+    },
   ],
+  display: "swap",
 });
 
-const funnel_display = Funnel_Display({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
-const main_font = funnel_display;
-const money_font = anthropic_sans;
-const title_font = funnel_display;
+const main_font = laranjinha;
+const money_font = laranjinha;
+const title_font = laranjinha;
 
 export { main_font, money_font, title_font };
